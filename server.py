@@ -1,6 +1,7 @@
 import socket
 import subprocess
 import re
+import time
 
 HOST = "0.0.0.0"
 PORT = 5000
@@ -8,7 +9,6 @@ PORT = 5000
 print("Starting ngrok...")
 subprocess.Popen(["ngrok", "tcp", str(PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-import time
 time.sleep(5)
 
 try:
@@ -33,4 +33,5 @@ print(f"Connected by {addr}")
 
 while True:
     data = "Telemetry Data\n"
+    time.sleep(1)
     conn.sendall(data.encode())
