@@ -33,5 +33,5 @@ print(f"Connected by {addr}")
 
 while True:
     data = "Telemetry Data\n"
-    time.sleep(1)
     conn.sendall(data.encode())
+    time.sleep(1)
