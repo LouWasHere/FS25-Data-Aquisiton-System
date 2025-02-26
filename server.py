@@ -2,6 +2,7 @@ import socket
 import subprocess
 import re
 import time
+import json
 
 HOST = "0.0.0.0"
 PORT = 5000
@@ -32,6 +33,9 @@ conn, addr = server.accept()
 print(f"Connected by {addr}")
 
 while True:
-    data = "Telemetry Data\n"
-    conn.sendall(data.encode())
+    data = {
+        "name": "Test Data",
+        "value": "Telemetry Data"
+    }
+    conn.sendall(json.dumps(data).encode())
     time.sleep(1)
