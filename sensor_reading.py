@@ -6,12 +6,14 @@ import math
 import board
 import adafruit_bno055
 
-i2c = board.I2C()  # uses board.SCL and board.SDA
-
-# Add a delay to ensure the sensor is ready
-time.sleep(1)
-
-sensor = adafruit_bno055.BNO055_I2C(i2c)
+try:
+    i2c = board.I2C()  # uses board.SCL and board.SDA
+    # Add a delay to ensure the sensor is ready
+    time.sleep(1)
+    sensor = adafruit_bno055.BNO055_I2C(i2c)
+except Exception as e:
+    print(f"Failed to initialize I2C connection: {e}")
+    sensor = None
 
 ser = serial.Serial('/dev/ttyS0', 115200)
 ser.flushInput()
@@ -22,6 +24,9 @@ arduinoSerial.flush()
 power_key = 6
 
 def get_imu_data():
+    if sensor is None:
+        return {"Error": "I2C connection failed, using dummy data"}
+
     try:
         sensor.mode = adafruit_bno055.NDOF_MODE
         print("Sensor mode set to:", sensor.mode)
