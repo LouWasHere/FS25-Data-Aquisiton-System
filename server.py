@@ -45,16 +45,28 @@ try:
         if data.decode() == "shutdown":
             print("Shutdown command received. Shutting down server...")
             break
+        
+        print("Attempting to gather sensor data...")
 
         imu_data = sensor_reading.get_imu_data()
+        
+        print("Got IMU data")
+        
         gps_data = sensor_reading.get_gps_data()
+        
+        print("Got GPS data")
+        
         serial_data = sensor_reading.get_serial_data()
+        
+        print("Got serial data")
 
         data = {
             "IMU Data": imu_data,
             "GPS Data": gps_data,
             "Serial Data": serial_data
         }
+
+        print("Attempting to send data...")
 
         conn.sendall(json.dumps(data).encode())
         time.sleep(1)
