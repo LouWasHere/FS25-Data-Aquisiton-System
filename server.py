@@ -10,13 +10,13 @@ HOST = "0.0.0.0"
 PORT = 5000
 
 print("Starting ngrok...")
-subprocess.Popen(["ngrok", "tcp", str(PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+ngrok_process = subprocess.Popen(["ngrok", "tcp", str(PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 time.sleep(5)
 
 try:
-    ngrok_process = subprocess.run(["curl", "-s", "http://localhost:4040/api/tunnels"], capture_output=True, text=True)
-    match = re.search(r'"public_url":"tcp://(.*?)"', ngrok_process.stdout)
+    ngrok_tunnel_process = subprocess.run(["curl", "-s", "http://localhost:4040/api/tunnels"], capture_output=True, text=True)
+    match = re.search(r'"public_url":"tcp://(.*?)"', ngrok_tunnel_process.stdout)
     if match:
         ngrok_url = match.group(1)
         print(f"Connect to the server using: {ngrok_url}")
@@ -77,3 +77,5 @@ finally:
     sensor_reading.power_down(sensor_reading.power_key)
     conn.close()
     server.close()
+    ngrok_process.terminate()
+    print("ngrok connection terminated.")
