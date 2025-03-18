@@ -3,6 +3,7 @@ import subprocess
 import re
 import time
 import json
+import select
 
 import sensor_reading
 
@@ -39,12 +40,16 @@ sensor_reading.power_on(sensor_reading.power_key)
 
 try:
     while True:
-        data = conn.recv(1024)
-        if not data:
-            break
-        if data.decode() == "shutdown":
-            print("Shutdown command received. Shutting down server...")
-            break
+        print("Checking for shutdown command...")
+        ready_to_read, _, _ = select.select([conn], [], [], 0.1)
+        if ready_to_read:
+            data = conn.recv(1024)
+            if not data:
+                print("No data received. Breaking loop.")
+                break
+            if data.decode() == "shutdown":
+                print("Shutdown command received. Shutting down server...")
+                break
         
         print("Attempting to gather sensor data...")
 
@@ -69,6 +74,7 @@ try:
         print("Attempting to send data...")
 
         conn.sendall(json.dumps(data).encode())
+        print("Data sent.")
         time.sleep(1)
 except KeyboardInterrupt:
     print("Server shutting down...")
