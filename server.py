@@ -4,6 +4,8 @@ import re
 import time
 import json
 
+import sensor_reading
+
 HOST = "0.0.0.0"
 PORT = 5000
 
@@ -32,10 +34,34 @@ print(f"Server listening on {HOST}:{PORT}")
 conn, addr = server.accept()
 print(f"Connected by {addr}")
 
-while True:
-    data = {
-        "name": "Test Data",
-        "value": "Telemetry Data"
-    }
-    conn.sendall(json.dumps(data).encode())
-    time.sleep(1)
+# Initialize the SIM7600X module
+sensor_reading.power_on(sensor_reading.power_key)
+
+try:
+    while True:
+        data = conn.recv(1024)
+        if not data:
+            break
+        if data.decode() == "shutdown":
+            print("Shutdown command received. Shutting down server...")
+            break
+
+        imu_data = sensor_reading.get_imu_data()
+        gps_data = sensor_reading.get_gps_data()
+        serial_data = sensor_reading.get_serial_data()
+
+        data = {
+            "IMU Data": imu_data,
+            "GPS Data": gps_data,
+            "Serial Data": serial_data
+        }
+
+        conn.sendall(json.dumps(data).encode())
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Server shutting down...")
+finally:
+    # Clean up and power down the SIM7600X module
+    sensor_reading.power_down(sensor_reading.power_key)
+    conn.close()
+    server.close()
