@@ -57,11 +57,11 @@ class MapWindow(QWidget):
         js_code = f"updateMarker({latitude}, {longitude});"
         self.web_view.page().runJavaScript(js_code, self.handle_js_result)
 
-    def handle_js_result(self, result):
-        if result is None:
-            logging.debug("JavaScript executed successfully.")
-        else:
-            logging.error(f"JavaScript error: {result}")
+    #def handle_js_result(self, result):
+    #    if result is None:
+    #        logging.debug("JavaScript executed successfully.")
+    #    else:
+    #        logging.error(f"JavaScript error: {result}")
 
 
 class TestClientApp(QWidget):
