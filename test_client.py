@@ -1,12 +1,15 @@
 import socket
 import sys
 import json
+import threading
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
 
 class TestClientApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.client = None
+        self.running = False
 
     def initUI(self):
         self.setWindowTitle('Local Telemetry Test Client')
@@ -46,14 +49,15 @@ class TestClientApp(QWidget):
         try:
             self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client.connect((server_host, server_port))
+            self.running = True
             self.shutdown_button.setEnabled(True)
-            self.receive_data()
+            threading.Thread(target=self.receive_data, daemon=True).start()
         except Exception as e:
             QMessageBox.critical(self, "Connection Error", f"Failed to connect to server: {e}")
 
     def receive_data(self):
         try:
-            while True:
+            while self.running:
                 data = self.client.recv(1024)
                 if not data:
                     break
@@ -64,9 +68,11 @@ class TestClientApp(QWidget):
             QMessageBox.critical(self, "Data Error", f"Error receiving data: {e}")
         finally:
             self.client.close()
+            self.running = False
 
     def shutdown_server(self):
         try:
+            self.running = False
             self.client.sendall("shutdown".encode())
             self.client.close()
             self.shutdown_button.setEnabled(False)

@@ -9,7 +9,9 @@ from queue import Queue
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QGridLayout, QWidget, QProgressBar
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap
-# import sensor_reading
+
+# Shared stop event for thread termination
+stop_event = threading.Event()
 
 # Enable testing mode
 TEST_MODE = True
@@ -20,6 +22,9 @@ PORT = 5000
 # Shared data structure for sensor data
 sensor_data = Queue()
 data_lock = threading.Lock()
+
+# Shared variable for the latest sensor data
+latest_sensor_data = None
 
 # Mock functions for testing mode with dynamic values
 def mock_get_imu_data():
@@ -164,62 +169,73 @@ class SensorWindow(QMainWindow):
                 connection = latest_data["IMU Data"].get("Connection", "Disconnected")
                 self.connection_label.setText(connection)
 
+    def closeEvent(self, event):
+        """Handle the window close event."""
+        stop_event.set()  # Signal all threads to stop
+        event.accept()
+
 # Function for data acquisition
 def data_acquisition_thread():
-    while True:
-        if TEST_MODE:
-            imu_data = mock_get_imu_data()
-            gps_data = mock_get_gps_data()
-            serial_data = mock_get_serial_data()
-        else:
-            imu_data = sensor_reading.get_imu_data()
-            gps_data = sensor_reading.get_gps_data()
-            serial_data = sensor_reading.get_serial_data()
+    global latest_sensor_data
+    while not stop_event.is_set():
+        imu_data = mock_get_imu_data()
+        gps_data = mock_get_gps_data()
+        serial_data = mock_get_serial_data()
 
         with data_lock:
-            sensor_data.put({
+            # Update the latest sensor data
+            latest_sensor_data = {
                 "IMU Data": imu_data,
                 "GPS Data": gps_data,
                 "Serial Data": serial_data
-            })
+            }
+            # Add the data to the queue for UI updates
+            sensor_data.put(latest_sensor_data)
         time.sleep(1)
 
 # Function for UI
 def ui_thread():
     app = QApplication([])
     window = SensorWindow()
+    app.aboutToQuit.connect(stop_event.set)  # Ensure stop_event is set when the app quits
     window.showFullScreen()
     app.exec_()
 
 # Function for networking
 def networking_thread():
+    global latest_sensor_data
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
     print(f"Server listening on {HOST}:{PORT}")
 
-    while True:
-        client_socket, client_address = server_socket.accept()
-        print(f"Connection established with {client_address}")
+    while not stop_event.is_set():
+        try:
+            server_socket.settimeout(1)  # Allow periodic checks for stop_event
+            client_socket, client_address = server_socket.accept()
+            print(f"Connection established with {client_address}")
 
-        def handle_client(client_socket):
-            try:
-                while True:
-                    with data_lock:
-                        if not sensor_data.empty():
-                            latest_data = sensor_data.get()
-                            # Send the latest sensor data as JSON
-                            client_socket.sendall(json.dumps(latest_data).encode('utf-8') + b'\n')
-                    time.sleep(1)  # Send data every second
-            except (ConnectionResetError, BrokenPipeError):
-                print(f"Connection with {client_address} closed.")
-            finally:
-                client_socket.close()
+            def handle_client(client_socket):
+                try:
+                    while not stop_event.is_set():
+                        # Send the latest sensor data to the client
+                        with data_lock:
+                            if latest_sensor_data:
+                                client_socket.sendall(json.dumps(latest_sensor_data).encode('utf-8') + b'\n')
+                        time.sleep(1)  # Send data every second
+                except (ConnectionResetError, BrokenPipeError):
+                    print(f"Connection with {client_address} closed.")
+                finally:
+                    client_socket.close()
 
-        # Start a new thread to handle the client
-        client_handler = threading.Thread(target=handle_client, args=(client_socket,), daemon=True)
-        client_handler.start()
+            # Start a new thread to handle the client
+            client_handler = threading.Thread(target=handle_client, args=(client_socket,), daemon=True)
+            client_handler.start()
+        except socket.timeout:
+            continue  # Check stop_event again
+
+    server_socket.close()
 
 # Start threads
 if __name__ == "__main__":
