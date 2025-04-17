@@ -124,14 +124,10 @@ def get_gps_data():
     print('Start GPS session...')
     send_at('AT+CGPS=1,1', 'OK', 1)
     time.sleep(2)
-    gps_data = None
-    while gps_data is None:
-        gps_data = send_at('AT+CGPSINFO', '+CGPSINFO: ', 1)
-        if gps_data is None:
-            time.sleep(1.5)
+    gps_data = send_at('AT+CGPSINFO', '+CGPSINFO: ', 1)
     send_at('AT+CGPS=0', 'OK', 1)
     if gps_data is None:
-        return {"Error": "Failed to get GPS data"}
+        return {"Error": "GPS is not ready"}
     return gps_data
 
 def get_serial_data():
