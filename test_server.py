@@ -188,8 +188,11 @@ def data_acquisition_thread():
         serial_data = mock_get_serial_data()
 
         with data_lock:
+            # Add a timestamp to the sensor data
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             # Update the latest sensor data
             latest_sensor_data = {
+                "Timestamp": timestamp,  # Add the timestamp here
                 "IMU Data": imu_data,
                 "GPS Data": gps_data,
                 "Serial Data": serial_data

@@ -46,7 +46,7 @@ class MapWindow(QWidget):
             return
 
         # Log the latitude and longitude
-        logging.debug(f"Updating marker to latitude: {latitude}, longitude: {longitude}")
+        # logging.debug(f"Updating marker to latitude: {latitude}, longitude: {longitude}")
 
         # Ensure this runs in the main thread
         QMetaObject.invokeMethod(self, "execute_js", Qt.QueuedConnection, 
@@ -57,11 +57,12 @@ class MapWindow(QWidget):
         js_code = f"updateMarker({latitude}, {longitude});"
         self.web_view.page().runJavaScript(js_code, self.handle_js_result)
 
-    #def handle_js_result(self, result):
-    #    if result is None:
-    #        logging.debug("JavaScript executed successfully.")
-    #    else:
-    #        logging.error(f"JavaScript error: {result}")
+    def handle_js_result(self, result):
+        if result is None:
+            return
+            #logging.debug("JavaScript executed successfully.")
+        else:
+            logging.error(f"JavaScript error: {result}")
 
 
 class TestClientApp(QWidget):
@@ -129,6 +130,13 @@ class TestClientApp(QWidget):
         layout = QGridLayout()  # Use a grid layout for modular design
         layout.setSpacing(20)  # Increased spacing between widgets
 
+        # Add a dedicated row for the timestamp
+        timestamp_layout = QHBoxLayout()
+        self.timestamp_label = QLabel("Timestamp: N/A")
+        self.timestamp_label.setStyleSheet("font-size: 16px; font-weight: bold; color: blue;")
+        timestamp_layout.addWidget(self.timestamp_label)
+        layout.addLayout(timestamp_layout, 0, 0, 1, 4)  # Spans the entire top row
+
         # Create labels for IMU Data
         self.data_labels = {}
         keys = ["RPM", "Speed", "Gear Position", "Linear Acceleration", "Gyro X", "Gyro Y", "Gyro Z", "Compass Angle"]
@@ -140,7 +148,7 @@ class TestClientApp(QWidget):
             self.data_labels[key] = label_value
 
             # Place each label in the grid
-            row = i // 2
+            row = (i // 2) + 1  # Start from row 1 (row 0 is for the timestamp)
             col = (i % 2) * 2
             layout.addWidget(label_key, row, col)
             layout.addWidget(label_value, row, col + 1)
@@ -156,7 +164,7 @@ class TestClientApp(QWidget):
         self.rpm_curve = self.rpm_graph_widget.plot(
             pen=pg.mkPen(color="r", width=2), name="RPM"
         )
-        layout.addWidget(self.rpm_graph_widget, 3, 0, 2, 2)  # Spans 2 rows and 2 columns
+        layout.addWidget(self.rpm_graph_widget, 4, 0, 2, 2)  # Spans 2 rows and 2 columns
 
         # Add Speed graph
         self.speed_graph_widget = PlotWidget()
@@ -169,31 +177,31 @@ class TestClientApp(QWidget):
         self.speed_curve = self.speed_graph_widget.plot(
             pen=pg.mkPen(color="g", width=2), name="Speed"
         )
-        layout.addWidget(self.speed_graph_widget, 3, 2, 2, 2)  # Spans 2 rows and 2 columns
+        layout.addWidget(self.speed_graph_widget, 4, 2, 2, 2)  # Spans 2 rows and 2 columns
 
         # Add the Map button
         self.map_button = QPushButton('Show Map', self)
         self.map_button.setStyleSheet("font-size: 16px;")
         self.map_button.clicked.connect(self.show_map_window)
-        layout.addWidget(self.map_button, 5, 2)
+        layout.addWidget(self.map_button, 6, 2)
 
         # Add recording buttons
         self.start_recording_button = QPushButton('Start Recording', self)
         self.start_recording_button.setStyleSheet("font-size: 16px;")
         self.start_recording_button.clicked.connect(self.start_recording)
-        layout.addWidget(self.start_recording_button, 5, 0)
+        layout.addWidget(self.start_recording_button, 6, 0)
 
         self.stop_recording_button = QPushButton('Stop Recording', self)
         self.stop_recording_button.setStyleSheet("font-size: 16px;")
         self.stop_recording_button.clicked.connect(self.stop_recording)
         self.stop_recording_button.setEnabled(False)  # Initially disabled
-        layout.addWidget(self.stop_recording_button, 5, 1)
+        layout.addWidget(self.stop_recording_button, 6, 1)
 
         # Add the shutdown button
         self.shutdown_button = QPushButton('Shutdown Server', self)
         self.shutdown_button.setStyleSheet("font-size: 16px;")
         self.shutdown_button.clicked.connect(self.shutdown_server)
-        layout.addWidget(self.shutdown_button, 5, 3)  # Bottom-right corner
+        layout.addWidget(self.shutdown_button, 6, 3)  # Bottom-right corner
 
         self.connected_screen.setLayout(layout)
 
@@ -239,6 +247,11 @@ class TestClientApp(QWidget):
         # Update the labels with the latest data
         imu_data = self.data.get("IMU Data", {})
         gps_data = self.data.get("GPS Data", {})
+        timestamp = self.data.get("Timestamp", "N/A")  # Get the timestamp
+
+        # Update the timestamp label
+        self.timestamp_label.setText(f"Timestamp: {timestamp}")
+
         for key, label in self.data_labels.items():
             value = imu_data.get(key, "N/A")
             label.setText(str(value))
@@ -270,7 +283,8 @@ class TestClientApp(QWidget):
     def start_recording(self):
         self.csv_file = open('recorded_data.csv', 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(['Speed (km/h)', 'RPM', 'Gear Position', 'Linear Acceleration', 'Latitude', 'Longitude'])
+        # Add Timestamp to the CSV header
+        self.csv_writer.writerow(['Timestamp', 'Speed (km/h)', 'RPM', 'Gear Position', 'Linear Acceleration', 'Latitude', 'Longitude'])
         self.recording = True
         self.start_recording_button.setEnabled(False)
         self.stop_recording_button.setEnabled(True)
@@ -286,13 +300,15 @@ class TestClientApp(QWidget):
         if self.recording and self.csv_writer:
             imu_data = self.data.get("IMU Data", {})
             gps_data = self.data.get("GPS Data", {})
+            timestamp = self.data.get("Timestamp", "N/A")  # Get the timestamp
             speed = imu_data.get("Speed", "N/A")
             rpm = imu_data.get("RPM", "N/A")
             gear = imu_data.get("Gear Position", "N/A")
             linear_acceleration = imu_data.get("Linear Acceleration", "N/A")
             latitude = gps_data.get("Latitude", "N/A")
             longitude = gps_data.get("Longitude", "N/A")
-            self.csv_writer.writerow([speed, rpm, gear, linear_acceleration, latitude, longitude])
+            # Include Timestamp in the CSV row
+            self.csv_writer.writerow([timestamp, speed, rpm, gear, linear_acceleration, latitude, longitude])
 
     def show_map_window(self):
         if not self.map_window:

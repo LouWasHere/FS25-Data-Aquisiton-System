@@ -72,7 +72,10 @@ class RaceDataAnalyzer(QMainWindow):
     def update_info(self, index):
         # Update info label
         row = self.data.iloc[index]
-        self.info_label.setText(f"Speed: {row['Speed (km/h)']} km/h, RPM: {row['RPM']}, Gear: {row['Gear Position']}")
+        self.info_label.setText(
+            f"Timestamp: {row['Timestamp']}, Speed: {row['Speed (km/h)']} km/h, "
+            f"RPM: {row['RPM']}, Gear: {row['Gear Position']}"
+        )
 
         # Use JavaScript to update the map dynamically without reloading
         js_code = f'''
