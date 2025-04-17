@@ -26,6 +26,9 @@ data_lock = threading.Lock()
 # Shared variable for the latest sensor data
 latest_sensor_data = None
 
+# Flag to track client connection status
+client_connected = False
+
 # Mock functions for testing mode with dynamic values
 def mock_get_imu_data():
     # Use time to create oscillating values for testing
@@ -33,7 +36,9 @@ def mock_get_imu_data():
     rpm = int((math.sin(current_time) + 1) * 7500)  # Oscillates between 0 and 15000
     speed = int((math.sin(current_time / 2) + 1) * 45)  # Oscillates between 0 and 90
     gear_position = str(int((math.sin(current_time / 3) + 1) * 3))  # Oscillates between 0 and 6
-    connection = "Active" if int(current_time) % 2 == 0 else "Disconnected"  # Toggles every second
+
+    # Use the client_connected flag to set the connection status
+    connection = "Active" if client_connected else "Disconnected"
 
     return {
         "Linear Acceleration": f"{(math.sin(current_time) + 1) * 0.5:.2f} Gs",
@@ -203,7 +208,7 @@ def ui_thread():
 
 # Function for networking
 def networking_thread():
-    global latest_sensor_data
+    global latest_sensor_data, client_connected
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((HOST, PORT))
@@ -215,8 +220,10 @@ def networking_thread():
             server_socket.settimeout(1)  # Allow periodic checks for stop_event
             client_socket, client_address = server_socket.accept()
             print(f"Connection established with {client_address}")
+            client_connected = True  # Set the connection status to active
 
             def handle_client(client_socket):
+                global client_connected
                 try:
                     while not stop_event.is_set():
                         # Send the latest sensor data to the client
@@ -227,6 +234,7 @@ def networking_thread():
                 except (ConnectionResetError, BrokenPipeError):
                     print(f"Connection with {client_address} closed.")
                 finally:
+                    client_connected = False  # Set the connection status to inactive
                     client_socket.close()
 
             # Start a new thread to handle the client
