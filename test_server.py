@@ -191,13 +191,46 @@ def ui_thread():
     window.showFullScreen()
     app.exec_()
 
+# Function for networking
+def networking_thread():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen(5)
+    print(f"Server listening on {HOST}:{PORT}")
+
+    while True:
+        client_socket, client_address = server_socket.accept()
+        print(f"Connection established with {client_address}")
+
+        def handle_client(client_socket):
+            try:
+                while True:
+                    with data_lock:
+                        if not sensor_data.empty():
+                            latest_data = sensor_data.get()
+                            # Send the latest sensor data as JSON
+                            client_socket.sendall(json.dumps(latest_data).encode('utf-8') + b'\n')
+                    time.sleep(1)  # Send data every second
+            except (ConnectionResetError, BrokenPipeError):
+                print(f"Connection with {client_address} closed.")
+            finally:
+                client_socket.close()
+
+        # Start a new thread to handle the client
+        client_handler = threading.Thread(target=handle_client, args=(client_socket,), daemon=True)
+        client_handler.start()
+
 # Start threads
 if __name__ == "__main__":
     acquisition_thread = threading.Thread(target=data_acquisition_thread, daemon=True)
     ui_thread_instance = threading.Thread(target=ui_thread, daemon=True)
+    networking_thread_instance = threading.Thread(target=networking_thread, daemon=True)
 
     acquisition_thread.start()
     ui_thread_instance.start()
+    networking_thread_instance.start()
 
     acquisition_thread.join()
     ui_thread_instance.join()
+    networking_thread_instance.join()
