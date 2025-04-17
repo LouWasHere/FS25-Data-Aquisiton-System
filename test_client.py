@@ -3,13 +3,66 @@ import sys
 import json
 import threading
 import csv
+import folium  # For map rendering
+import os  # Import os to handle file paths
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QMessageBox, QStackedWidget, QGridLayout
 )
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QUrl, QMetaObject, Q_ARG, pyqtSlot
+from PyQt5.QtWebEngineWidgets import QWebEngineView  # For displaying the map
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+class MapWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("GPS Map")
+        self.setFixedSize(800, 600)
+
+        layout = QVBoxLayout()
+
+        # Web view to display the map
+        self.web_view = QWebEngineView()
+        layout.addWidget(self.web_view)
+
+        self.setLayout(layout)
+
+        # Load the static HTML file
+        map_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map.html")
+        self.web_view.setUrl(QUrl.fromLocalFile(map_file_path))
+
+    def update_marker(self, latitude, longitude):
+        # Validate latitude and longitude
+        if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+            logging.error(f"Invalid latitude or longitude: {latitude}, {longitude}")
+            return
+
+        # Log the latitude and longitude
+        logging.debug(f"Updating marker to latitude: {latitude}, longitude: {longitude}")
+
+        # Ensure this runs in the main thread
+        QMetaObject.invokeMethod(self, "execute_js", Qt.QueuedConnection, 
+                                 Q_ARG(float, latitude), Q_ARG(float, longitude))
+
+    @pyqtSlot(float, float)
+    def execute_js(self, latitude, longitude):
+        js_code = f"updateMarker({latitude}, {longitude});"
+        self.web_view.page().runJavaScript(js_code, self.handle_js_result)
+
+    def handle_js_result(self, result):
+        if result is None:
+            logging.debug("JavaScript executed successfully.")
+        else:
+            logging.error(f"JavaScript error: {result}")
+
 
 class TestClientApp(QWidget):
     def __init__(self):
@@ -20,6 +73,7 @@ class TestClientApp(QWidget):
         self.csv_file = None
         self.csv_writer = None
         self.data = {}
+        self.map_window = None  # Reference to the Map window
         self.initUI()
 
     def initUI(self):
@@ -117,6 +171,12 @@ class TestClientApp(QWidget):
         )
         layout.addWidget(self.speed_graph_widget, 3, 2, 2, 2)  # Spans 2 rows and 2 columns
 
+        # Add the Map button
+        self.map_button = QPushButton('Show Map', self)
+        self.map_button.setStyleSheet("font-size: 16px;")
+        self.map_button.clicked.connect(self.show_map_window)
+        layout.addWidget(self.map_button, 5, 2)
+
         # Add recording buttons
         self.start_recording_button = QPushButton('Start Recording', self)
         self.start_recording_button.setStyleSheet("font-size: 16px;")
@@ -178,9 +238,16 @@ class TestClientApp(QWidget):
     def update_data_display(self):
         # Update the labels with the latest data
         imu_data = self.data.get("IMU Data", {})
+        gps_data = self.data.get("GPS Data", {})
         for key, label in self.data_labels.items():
             value = imu_data.get(key, "N/A")
             label.setText(str(value))
+
+        # Update the map window if open
+        if self.map_window:
+            latitude = gps_data.get("Latitude", 0)
+            longitude = gps_data.get("Longitude", 0)
+            self.map_window.update_marker(latitude, longitude)
 
         # Update graph data
         self.rpm_data.append(imu_data.get("RPM", 0))
@@ -203,7 +270,7 @@ class TestClientApp(QWidget):
     def start_recording(self):
         self.csv_file = open('recorded_data.csv', 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(['Speed (km/h)', 'RPM', 'Gear Position', 'Linear Acceleration'])
+        self.csv_writer.writerow(['Speed (km/h)', 'RPM', 'Gear Position', 'Linear Acceleration', 'Latitude', 'Longitude'])
         self.recording = True
         self.start_recording_button.setEnabled(False)
         self.stop_recording_button.setEnabled(True)
@@ -218,11 +285,19 @@ class TestClientApp(QWidget):
     def record_data_to_csv(self):
         if self.recording and self.csv_writer:
             imu_data = self.data.get("IMU Data", {})
+            gps_data = self.data.get("GPS Data", {})
             speed = imu_data.get("Speed", "N/A")
             rpm = imu_data.get("RPM", "N/A")
             gear = imu_data.get("Gear Position", "N/A")
             linear_acceleration = imu_data.get("Linear Acceleration", "N/A")
-            self.csv_writer.writerow([speed, rpm, gear, linear_acceleration])
+            latitude = gps_data.get("Latitude", "N/A")
+            longitude = gps_data.get("Longitude", "N/A")
+            self.csv_writer.writerow([speed, rpm, gear, linear_acceleration, latitude, longitude])
+
+    def show_map_window(self):
+        if not self.map_window:
+            self.map_window = MapWindow()
+        self.map_window.show()
 
     def shutdown_server(self):
         try:
