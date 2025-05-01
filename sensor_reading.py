@@ -112,7 +112,9 @@ def get_gps_data():
     gps_data = send_at('AT+CGPSINFO', '+CGPSINFO: ', 1)
     send_at('AT+CGPS=0', 'OK', 1)
     if gps_data is None:
-        return {"Error": "GPS is not ready"}
+        # Return dummy GPS data if the GPS is not ready
+        print("GPS is not ready. Sending dummy data.")
+        return {"Latitude": 53.8067, "Longitude": 1.5550}  # Replace with your desired dummy coordinates
     return gps_data
 
 def get_serial_data():
