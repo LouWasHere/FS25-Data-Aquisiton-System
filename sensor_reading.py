@@ -121,7 +121,12 @@ def get_serial_data():
     try:
         if arduinoSerial.in_waiting > 0:
             data = arduinoSerial.readline().decode('utf-8').rstrip()
-            return {"Sensor Value": data}
+            # Assuming the data is in the format: "RPM:12345,Speed:67,Gear:3"
+            parsed_data = {}
+            for item in data.split(','):
+                key, value = item.split(':')
+                parsed_data[key.strip()] = value.strip()
+            return parsed_data
         return {"Error": "No data available"}
     except Exception as e:
         print(f"Failed to read serial data: {e}")
