@@ -4,13 +4,14 @@ import RPi.GPIO as GPIO
 import time
 import math
 import board
-import adafruit_bno055
+import adafruit_mpu6050
 
 try:
     i2c = board.I2C()  # uses board.SCL and board.SDA
     # Add a delay to ensure the sensor is ready
     time.sleep(1)
-    sensor = adafruit_bno055.BNO055_I2C(i2c)
+    sensor = adafruit_mpu6050.MPU6050(i2c)
+    print("MPU6050 initialized successfully.")
 except Exception as e:
     print(f"Failed to initialize I2C connection: {e}")
     sensor = None
@@ -27,31 +28,21 @@ def get_imu_data():
     if sensor is None:
         return {"Error": "I2C connection failed, using dummy data"}
 
-    try:
-        sensor.mode = adafruit_bno055.NDOF_MODE
-        print("Sensor mode set to:", sensor.mode)
-    except OSError as e:
-        print(f"Failed to set sensor mode: {e}")
-        return {"Error": f"Failed to set sensor mode: {e}"}
-
-    time.sleep(5)
-
     data = {}
     try:
-        linear_accel = sensor.linear_acceleration
-        gyro = sensor.gyro
-        euler = sensor.euler
-        calibration = sensor.calibration_status
-
-        if linear_accel is not None and all(v is not None for v in linear_accel):
-            magnitude = math.sqrt(linear_accel[0]**2 + linear_accel[1]**2 + linear_accel[2]**2) / 9.81
+        # Read acceleration data
+        accel = sensor.acceleration
+        if accel is not None:
+            magnitude = math.sqrt(accel[0]**2 + accel[1]**2 + accel[2]**2) / 9.81
             data["Linear Acceleration"] = f"{magnitude:.2f} Gs"
-            print(f"Linear Acceleration: {linear_accel}, Magnitude: {magnitude:.2f} Gs")
+            print(f"Linear Acceleration: {accel}, Magnitude: {magnitude:.2f} Gs")
         else:
             data["Linear Acceleration"] = "N/A"
             print("Linear Acceleration: N/A")
 
-        if gyro is not None and all(v is not None for v in gyro):
+        # Read gyroscope data
+        gyro = sensor.gyro
+        if gyro is not None:
             data["Gyro X"] = f"{gyro[0]:.2f}"
             data["Gyro Y"] = f"{gyro[1]:.2f}"
             data["Gyro Z"] = f"{gyro[2]:.2f}"
@@ -62,21 +53,15 @@ def get_imu_data():
             data["Gyro Z"] = "N/A"
             print("Gyroscope: N/A")
 
-        if euler is not None and euler[0] is not None:
-            data["Compass Angle"] = f"{euler[0]:.2f}°"
-            print(f"Compass Angle: {euler[0]:.2f}°")
+        # Read temperature data
+        temperature = sensor.temperature
+        if temperature is not None:
+            data["Temperature"] = f"{temperature:.2f}°C"
+            print(f"Temperature: {temperature:.2f}°C")
         else:
-            data["Compass Angle"] = "N/A"
-            print("Compass Angle: N/A")
-
-        data["Calibration Status"] = {
-            "Sys": calibration[0],
-            "Gyro": calibration[1],
-            "Accel": calibration[2],
-            "Mag": calibration[3]
-        }
-        print(f"Calibration Status - Sys: {calibration[0]}, Gyro: {calibration[1]}, Accel: {calibration[2]}, Mag: {calibration[3]}")
-    except OSError as e:
+            data["Temperature"] = "N/A"
+            print("Temperature: N/A")
+    except Exception as e:
         print(f"Failed to read sensor data: {e}")
         return {"Error": f"Failed to read sensor data: {e}"}
 
