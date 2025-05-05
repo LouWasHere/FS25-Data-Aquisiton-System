@@ -14,7 +14,19 @@ The client software also features the functionality to "record" data locally - a
 
 This suite of hardware sensors, software programs and network infrastructure is a valuable part of our electrics system and will help us further develop our efforts into the future.
 
-## Design Documentation
+# Design Documentation
 
+## Hardware
 
+The core of the DAQ system is the Raspberry Pi that hosts the server, collects data from the sensors and renders the dashboard shown to the driver on the steering-wheel mounted screen. That being said, the sandwich involved in making this happen is a little bigger than just the Pi. The GPS/GNSS HAT is mounted atop the Pi, and on top of that we designed a custom PCB that allows us to mount our IMU, Arduino for analog signal interptetation, RS232 signal translator chip as well as various other circuit components and connection points.
+
+*SCREENSHOTS OF PCB DESIGN, SOLDERED HARDWARE AND ORIGINAL SCHEMATIC TO COME*
+
+## Software Components
+
+There are, as described, three aspects to the software suite developed to work alongside the DAQ. The code that runs on the car, as well as two programs that run on a remote device that provide real-time information and post-race analysis respectively.
+
+### Server / Dashboard / Data Interpreter
+
+This code is designed to be run on the Raspberry Pi, but can be run on any device to test functionality. This program operates three main threads at all times to keep track of each primary aspect of the program.
 
