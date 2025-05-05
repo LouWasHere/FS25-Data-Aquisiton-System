@@ -2,7 +2,7 @@
 
 This is the repository for the code run on our Raspberry Pi-powered DAQ for our Formula Student 2025 Internal Combustion car effort at the University of Leeds, as well as the code run on the client pitwall listeners.
 
-More documentation and specification to follow.
+## Abstract
 
 Alongside the many other leaps forward for our team this year, we have also been developing our own proprietary Data Acquisition System that serves as a mechanism for telemetry, driver feedback and communication. 
 
@@ -13,3 +13,8 @@ However, the functionality does not end there. We also have a live monitoring sy
 The client software also features the functionality to "record" data locally - and once track time has ended, a final piece of software can be used to analyze race data that was recorded by the client tool. 
 
 This suite of hardware sensors, software programs and network infrastructure is a valuable part of our electrics system and will help us further develop our efforts into the future.
+
+## Design Documentation
+
+
+
