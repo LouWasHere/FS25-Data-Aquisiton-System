@@ -28,5 +28,16 @@ There are, as described, three aspects to the software suite developed to work a
 
 ### Server / Dashboard / Data Interpreter
 
-This code is designed to be run on the Raspberry Pi, but can be run on any device to test functionality. This program operates three main threads at all times to keep track of each primary aspect of the program.
+This code is designed to be run on the Raspberry Pi, but can be run on any device to test functionality. This program operates three main threads at all times to keep track of each primary aspect of the program. These threads are:
+ - Dashboard UI Display and Updating
+ - Sensor querying, data acquisition and processing
+ - Server connections and data transmission over the 4G network
+
+The dashboard is written in PyQt. It renders a simple but primarily legible design onto a 3.5-inch screen mounted to the steering wheel of the car. This displays various pieces of information relevant to the driver, as gathered and calulated by the DAQ.
+
+*SCREENSHOTS TO FOLLOW*
+
+The steering wheel features two buttons that we use to page through different screens on the dashboard. One of these screens contains an address and port that can be used to access the server code running on the DAQ from any internet-connected device.
+
+The DAQ features a SIM card tray that, when populated and the correct commands run, enable internat access and thus server hosting. Through ngrok, we are able to retain a static address and port to connect over despute the dynamic nature of a mobile network internet connection.
 
