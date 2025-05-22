@@ -19,7 +19,7 @@ except ImportError:
 stop_event = threading.Event()
 
 # Enable testing mode
-TEST_MODE = False
+TEST_MODE = True
 
 # Temporary host and port for testing
 HOST = "0.0.0.0"
@@ -180,6 +180,8 @@ class SensorWindow(QMainWindow):
                 # Update Gear Position
                 gear = latest_data["Serial Data"].get("Gear", "N")
                 self.gear_label.setText(gear)
+                
+                print(f"Debug: latest_data = {latest_data}")
 
                 # Update Connection Status
                 if TEST_MODE:

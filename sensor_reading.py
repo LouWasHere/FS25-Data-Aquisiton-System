@@ -81,26 +81,30 @@ def send_at(command, back, timeout):
             return None
         else:
             GPSDATA = str(rec_buff.decode()).replace('\n', '').replace('\r', '').replace('AT', '').replace('+CGPSINFO', '').replace(': ', '')
-            if ",,,,,," in GPSDATA or len(GPSDATA) < 12:
-                print('GPS is not ready')
+            if ",,,,,," in GPSDATA or len(GPSDATA) < 28:  # Ensure GPSDATA has the required length
+                print('GPS is not ready or data is incomplete')
                 return None
 
-            Lat = GPSDATA[:2]
-            SmallLat = GPSDATA[2:11]
-            NorthOrSouth = GPSDATA[12]
-            Long = GPSDATA[14:17]
-            SmallLong = GPSDATA[17:26]
-            EastOrWest = GPSDATA[27]
+            try:
+                Lat = GPSDATA[:2]
+                SmallLat = GPSDATA[2:11]
+                NorthOrSouth = GPSDATA[12]
+                Long = GPSDATA[14:17]
+                SmallLong = GPSDATA[17:26]
+                EastOrWest = GPSDATA[27]
 
-            FinalLat = float(Lat) + (float(SmallLat) / 60)
-            FinalLong = float(Long) + (float(SmallLong) / 60)
+                FinalLat = float(Lat) + (float(SmallLat) / 60)
+                FinalLong = float(Long) + (float(SmallLong) / 60)
 
-            if NorthOrSouth == 'S':
-                FinalLat = -FinalLat
-            if EastOrWest == 'W':
-                FinalLong = -FinalLong
+                if NorthOrSouth == 'S':
+                    FinalLat = -FinalLat
+                if EastOrWest == 'W':
+                    FinalLong = -FinalLong
 
-            return {"Latitude": FinalLat, "Longitude": FinalLong}
+                return {"Latitude": FinalLat, "Longitude": FinalLong}
+            except (IndexError, ValueError) as e:
+                print(f"Error parsing GPS data: {e}")
+                return None
     else:
         print('GPS is not ready')
         return None
