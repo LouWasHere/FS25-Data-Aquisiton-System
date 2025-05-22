@@ -142,6 +142,7 @@ class SensorWindow(QMainWindow):
         with data_lock:
             if not sensor_data.empty():
                 latest_data = sensor_data.get()
+                print(f"Debug: latest_data in update_sensor_data = {latest_data}")  # Debug print
 
                 # Update RPM bar and label
                 rpm = int(latest_data["Serial Data"].get("RPM", 0))
