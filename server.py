@@ -314,6 +314,8 @@ def networking_thread():
 
         with data_lock:
             latest_sensor_data = {"Ngrok URL": ngrok_url}
+            sensor_data.put(latest_sensor_data)  # Add to the queue for the UI
+            print(f"Debug: Added Ngrok URL to sensor_data queue: {ngrok_url}")
 
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((HOST, PORT))
