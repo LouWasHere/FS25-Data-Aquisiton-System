@@ -144,8 +144,9 @@ class SensorWindow(QMainWindow):
                 latest_data = sensor_data.get()
                 print(f"Debug: latest_data in update_sensor_data = {latest_data}")  # Debug print
 
-                # Update RPM bar and label
-                rpm = int(latest_data["Serial Data"].get("RPM", 0))
+                # Use .get to avoid KeyError if 'Serial Data' is missing
+                serial_data = latest_data.get("Serial Data", {"RPM": 0, "Speed": 0, "Gear": "N"})
+                rpm = int(serial_data.get("RPM", 0))
                 self.rpm_bar.setValue(rpm)
                 self.rpm_label.setText(f"{rpm} RPM")
                 if rpm > 11250:  # Over 3/4 of 15000
@@ -161,8 +162,7 @@ class SensorWindow(QMainWindow):
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
                     )
 
-                # Update Speed bar and label
-                speed = int(latest_data["Serial Data"].get("Speed", 0))
+                speed = int(serial_data.get("Speed", 0))
                 self.speed_bar.setValue(speed)
                 self.speed_label.setText(f"{speed} km/h")
                 if speed > 67:  # Over 3/4 of 90
@@ -178,10 +178,8 @@ class SensorWindow(QMainWindow):
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
                     )
 
-                # Update Gear Position
-                gear = latest_data["Serial Data"].get("Gear", "N")
+                gear = serial_data.get("Gear", "N")
                 self.gear_label.setText(gear)
-                
                 print(f"Debug: latest_data = {latest_data}")
 
                 # Update Connection Status
@@ -314,8 +312,19 @@ def networking_thread():
             return
 
         with data_lock:
-            latest_sensor_data = {"Ngrok URL": ngrok_url}
-            sensor_data.put(latest_sensor_data)  # Add to the queue for the UI
+            # Always put a full data structure in the queue for the UI
+            if latest_sensor_data and isinstance(latest_sensor_data, dict):
+                data = latest_sensor_data.copy()
+            else:
+                data = {
+                    "Timestamp": "",
+                    "IMU Data": {},
+                    "GPS Data": {},
+                    "Serial Data": {"RPM": 0, "Speed": 0, "Gear": "N"}
+                }
+            data["Ngrok URL"] = ngrok_url
+            latest_sensor_data = data
+            sensor_data.put(latest_sensor_data)
             print(f"Debug: Added Ngrok URL to sensor_data queue: {ngrok_url}")
 
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

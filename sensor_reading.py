@@ -130,6 +130,7 @@ def get_serial_data():
             for item in data.split(','):
                 key, value = item.split(':')
                 parsed_data[key.strip()] = value.strip()
+                print(f"Parsed Serial Data: {key.strip()} = {value.strip()}")
             return parsed_data
         return {"Error": "No data available"}
     except Exception as e:
