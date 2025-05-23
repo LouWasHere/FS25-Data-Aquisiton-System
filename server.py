@@ -118,6 +118,7 @@ class SensorWindow(QMainWindow):
         # Connection Status
         self.connection_label = QLabel("Disconnected")
         self.connection_label.setStyleSheet("font-size: 14pt; color: #00FF00; qproperty-alignment: AlignCenter;")
+        self.ngrok_url_displayed = False  # Track if we've set the ngrok URL
 
         # Add widgets to the layout
         self.layout.addWidget(self.rpm_bar, 0, 0, 1, 3)  # RPM bar spans 3 columns
@@ -186,8 +187,11 @@ class SensorWindow(QMainWindow):
                 if TEST_MODE:
                     self.connection_label.setText("Disconnected")
                 else:
-                    ngrok_url = latest_data.get("Ngrok URL", "Disconnected")
-                    self.connection_label.setText(ngrok_url)
+                    if not self.ngrok_url_displayed:
+                        ngrok_url = latest_data.get("Ngrok URL")
+                        if ngrok_url and ngrok_url != "Disconnected":
+                            self.connection_label.setText(ngrok_url)
+                            self.ngrok_url_displayed = True
 
     def closeEvent(self, event):
         """Handle the window close event."""
