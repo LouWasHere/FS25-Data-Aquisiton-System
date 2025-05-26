@@ -198,7 +198,7 @@ class TestClientApp(QWidget):
         layout.addWidget(self.stop_recording_button, 6, 1)
 
         # Add the shutdown button
-        self.shutdown_button = QPushButton('Shutdown Server', self)
+        self.shutdown_button = QPushButton('Close Connection', self)
         self.shutdown_button.setStyleSheet("font-size: 16px;")
         self.shutdown_button.clicked.connect(self.shutdown_server)
         layout.addWidget(self.shutdown_button, 6, 3)  # Bottom-right corner
@@ -328,10 +328,10 @@ class TestClientApp(QWidget):
             self.running = False
             self.client.sendall("shutdown".encode())
             self.client.close()
-            QMessageBox.information(self, "Shutdown", "Server has been shut down.")
+            QMessageBox.information(self, "Shutdown", "Connection Closed.")
             self.stacked_widget.setCurrentWidget(self.logon_screen)
         except Exception as e:
-            QMessageBox.critical(self, "Shutdown Error", f"Failed to shutdown server: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to close connection: {e}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
