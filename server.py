@@ -143,7 +143,7 @@ class SensorWindow(QMainWindow):
         with data_lock:
             if not sensor_data.empty():
                 latest_data = sensor_data.get()
-                print(f"Debug: latest_data in update_sensor_data = {latest_data}")  # Debug print
+                # print(f"Debug: latest_data in update_sensor_data = {latest_data}")  # Debug print
 
                 # Use .get to avoid KeyError if 'Serial Data' is missing
                 serial_data = latest_data.get("Serial Data", {"RPM": 0, "Speed": 0, "Gear": "N"})
@@ -181,11 +181,14 @@ class SensorWindow(QMainWindow):
 
                 gear = serial_data.get("Gear", "N")
                 self.gear_label.setText(gear)
-                print(f"Debug: latest_data = {latest_data}")
+                # print(f"Debug: latest_data = {latest_data}")
 
                 # Update Connection Status
                 if TEST_MODE:
-                    self.connection_label.setText("Disconnected")
+                    if client_connected:
+                        self.connection_label.setText("Active")
+                    else:
+                        self.connection_label.setText("Disconnected")
                 else:
                     if not self.ngrok_url_displayed:
                         ngrok_url = latest_data.get("Ngrok URL")
