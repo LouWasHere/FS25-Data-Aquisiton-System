@@ -135,7 +135,7 @@ def get_serial_data():
             return parsed_data
         return {"Error": "No data available"}
     except Exception as e:
-        print(f"Failed to read serial data: {e}")
+        print(f"Failed to read serial data: {e}. Data: {data}")
         return {"Error": f"Failed to read serial data: {e}"}
 
 def power_on(power_key):
