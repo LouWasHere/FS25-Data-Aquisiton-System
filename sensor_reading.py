@@ -122,6 +122,7 @@ def get_gps_data():
     return gps_data
 
 def get_serial_data():
+    print("Reading serial data from Arduino...")
     try:
         if arduinoSerial.in_waiting > 0:
             data = arduinoSerial.readline().decode('utf-8').rstrip()
