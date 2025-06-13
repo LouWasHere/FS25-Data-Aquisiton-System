@@ -163,4 +163,33 @@ def power_down(power_key):
         time.sleep(18)
         print('Goodbye')
     except Exception as e:
-        print(f"Failed to power down SIM7600X: {e}")
+        print(f"Failed to power down SIM7600X: {e}")   
+
+rs232 = serial.Serial('/dev/ttyAMA1', 9600, timeout=1)
+rs232.flush() 
+
+def get_rs232_data():
+    if rs232.in_waiting > 143:
+        data = rs232.read(144)  # Full packet size
+
+        # Confirm marker bytes at positions 140, 141, 142
+        if data[140] == 0xFC and data[141] == 0xFB and data[142] == 0xFA:
+            # Compute checksum to validate (optional but recommended)
+            checksum = sum(data[:143]) & 0xFF
+            if checksum == data[143]:
+                rpm = int.from_bytes(data[0:2], byteorder='big')
+                throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
+                engine_temp = int.from_bytes(data[8:10], byteorder='big') * 0.1
+                drive_speed = int.from_bytes(data[56:58], byteorder='big') * 0.1
+                ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
+                gear = int.from_bytes(data[104:106], byteorder='big') // 10
+
+                return {
+                    'RPM': rpm,
+                    'Throttle Position (%)': throttle_pos,
+                    'Engine Temperature (°C)': engine_temp,
+                    'Drive Speed (km/h)': drive_speed,
+                    'Ground Speed (km/h)': ground_speed,
+                    'Gear': gear
+                }
+    return None
