@@ -51,10 +51,7 @@ def mock_get_imu_data():
         "Gyro X": f"{math.sin(current_time):.2f}",
         "Gyro Y": f"{math.cos(current_time):.2f}",
         "Gyro Z": f"{math.sin(current_time / 2):.2f}",
-        "RPM": rpm,
-        "Speed": speed,
-        "Gear Position": gear_position,
-        "Connection": connection
+        "Temperature": f"{(math.sin(current_time / 3) + 1) * 20:.2f} °C"
     }
 
 def mock_get_gps_data():

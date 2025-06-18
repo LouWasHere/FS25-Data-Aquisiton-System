@@ -5,7 +5,7 @@ void setup() {
 
 void loop() {
   //int sensorValue = analogRead(A0);
-  Serial1.print("RPM:12345,Speed:67,Gear:3\n");
+  Serial1.print("Wheel Speed:12345,Neutral Flag:0\n");
   delay(500);
 }
 `

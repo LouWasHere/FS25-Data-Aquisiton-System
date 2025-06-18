@@ -126,7 +126,7 @@ def get_serial_data():
     try:
         if arduinoSerial.in_waiting > 0:
             data = arduinoSerial.readline().decode('utf-8').rstrip()
-            # Assuming the data is in the format: "RPM:12345,Speed:67,Gear:3"
+            # Assuming the data is in the format: "Name:VAL,Name2:VAL2"
             parsed_data = {}
             for item in data.split(','):
                 key, value = item.split(':')
