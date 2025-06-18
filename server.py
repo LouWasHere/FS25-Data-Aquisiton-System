@@ -19,7 +19,7 @@ except ImportError:
 stop_event = threading.Event()
 
 # Enable testing mode
-TEST_MODE = True
+TEST_MODE = False
 
 # Temporary host and port for testing
 HOST = "0.0.0.0"
@@ -64,7 +64,7 @@ def mock_get_gps_data():
 def mock_get_serial_data():
     # Simulate sensor values oscillating
     current_time = time.time()
-    wheel_speed = int((math.sin(current_time / 5) + 1) * 90)  # Oscillates between 0 and 90
+    wheel_speed = int((math.sin(current_time / 5) + 1) * 45)  # Oscillates between 0 and 90
     neutral_flag = int((math.sin(current_time / 2) + 1))  # Oscillates between 0 and 1
 
     return {

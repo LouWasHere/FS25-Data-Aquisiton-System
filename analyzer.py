@@ -1,12 +1,29 @@
 import sys
 import pandas as pd
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QSlider, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QSlider, QHBoxLayout, QPushButton, QComboBox, QDialog, QTextEdit
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import folium
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtCore import Qt
+
+class DataPointDialog(QDialog):
+    def __init__(self, data_dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("All Data for Selected Point")
+        self.setMinimumSize(400, 400)
+        layout = QVBoxLayout()
+        self.text_edit = QTextEdit()
+        self.text_edit.setReadOnly(True)
+        # Format the data as key: value lines
+        text = "\n".join(f"{k}: {v}" for k, v in data_dict.items())
+        self.text_edit.setText(text)
+        layout.addWidget(self.text_edit)
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn)
+        self.setLayout(layout)
 
 class RaceDataAnalyzer(QMainWindow):
     def __init__(self):
@@ -17,14 +34,14 @@ class RaceDataAnalyzer(QMainWindow):
         # Load data
         self.data = pd.read_csv("recorded_data.csv")
 
-        # Column keys for new structure
-        self.rpm_col = "RS232 Data.RPM"
-        self.speed_col = "Serial Data.Wheel Speed"
-        self.gear_col = "RS232 Data.Gear"
-        self.temp_col = "RS232 Data.Engine Temperature"
-        self.lat_col = "GPS Data.Latitude"
-        self.lon_col = "GPS Data.Longitude"
-        self.timestamp_col = "Timestamp"
+        # Dynamically find relevant columns
+        self.timestamp_col = self.find_column(['Timestamp'])
+        self.speed_col = self.find_column(['Speed', 'Wheel Speed'])
+        self.rpm_col = self.find_column(['RPM'])
+        self.gear_col = self.find_column(['Gear'])
+        self.lat_col = self.find_column(['Latitude'])
+        self.lon_col = self.find_column(['Longitude'])
+        self.engine_temp_col = self.find_column(['Engine Temperature'])
 
         # Create map
         self.map = self.create_map()
@@ -32,35 +49,35 @@ class RaceDataAnalyzer(QMainWindow):
         # Set up UI
         self.init_ui()
 
-    def get_val(self, row, col, default="N/A"):
-        return row[col] if col in row and pd.notnull(row[col]) else default
+    def find_column(self, keywords):
+        """Find the first column containing any of the keywords (case-insensitive)."""
+        for col in self.data.columns:
+            for kw in keywords:
+                if kw.lower() in col.lower():
+                    return col
+        return None
 
     def create_map(self):
-        # Use first valid GPS point for centering
-        valid_gps = self.data.dropna(subset=[self.lat_col, self.lon_col])
-        if valid_gps.empty:
-            start_coords = (0, 0)
-        else:
-            start_coords = (valid_gps.iloc[0][self.lat_col], valid_gps.iloc[0][self.lon_col])
+        # Use the first valid GPS coordinate
+        start_coords = (self.data.iloc[0][self.lat_col], self.data.iloc[0][self.lon_col])
         race_map = folium.Map(location=start_coords, zoom_start=15)
 
         # Add route to the map
         points = []
-        for _, row in valid_gps.iterrows():
+        for _, row in self.data.iterrows():
             point = (row[self.lat_col], row[self.lon_col])
             points.append(point)
             folium.CircleMarker(
                 location=point,
                 radius=5,
-                popup=f"Speed: {self.get_val(row, self.speed_col)} km/h\nRPM: {self.get_val(row, self.rpm_col)}\nGear: {self.get_val(row, self.gear_col)}",
+                popup=f"Speed: {row.get(self.speed_col, 'N/A')} km/h\nRPM: {row.get(self.rpm_col, 'N/A')}\nGear: {row.get(self.gear_col, 'N/A')}\nEngine Temp: {row.get(self.engine_temp_col, 'N/A')}",
                 color='blue',
                 fill=True,
                 fill_color='blue'
             ).add_to(race_map)
 
         # Draw lines between points
-        if points:
-            folium.PolyLine(points, color='red', weight=2.5, opacity=1).add_to(race_map)
+        folium.PolyLine(points, color='red', weight=2.5, opacity=1).add_to(race_map)
 
         # Save map to HTML
         race_map.save("analysisMap.html")
@@ -90,16 +107,14 @@ class RaceDataAnalyzer(QMainWindow):
         # Update info label
         row = self.data.iloc[index]
         self.info_label.setText(
-            f"Timestamp: {self.get_val(row, self.timestamp_col)}, "
-            f"Speed: {self.get_val(row, self.speed_col)} km/h, "
-            f"RPM: {self.get_val(row, self.rpm_col)}, "
-            f"Gear: {self.get_val(row, self.gear_col)}, "
-            f"Engine Temp: {self.get_val(row, self.temp_col)}"
+            f"Timestamp: {row.get(self.timestamp_col, 'N/A')}, "
+            f"Speed: {row.get(self.speed_col, 'N/A')} km/h, "
+            f"RPM: {row.get(self.rpm_col, 'N/A')}, "
+            f"Gear: {row.get(self.gear_col, 'N/A')}, "
+            f"Engine Temp: {row.get(self.engine_temp_col, 'N/A')}"
         )
 
         # Use JavaScript to update the map dynamically without reloading
-        lat = self.get_val(row, self.lat_col, 0)
-        lon = self.get_val(row, self.lon_col, 0)
         js_code = f'''
         if (typeof window.map === 'undefined') {{
             console.error("Map object not found.");
@@ -110,7 +125,7 @@ class RaceDataAnalyzer(QMainWindow):
             }}
 
             // Add a new marker for the current point
-            var currentPoint = [{lat}, {lon}];
+            var currentPoint = [{row[self.lat_col]}, {row[self.lon_col]}];
             window.currentMarker = L.circleMarker(currentPoint, {{
                 radius: 8,
                 color: 'green',
@@ -122,6 +137,7 @@ class RaceDataAnalyzer(QMainWindow):
             window.map.panTo(currentPoint);
         }}
         '''
+
         self.map_view.page().runJavaScript(js_code)
 
         # Update graphs
@@ -153,6 +169,11 @@ class RaceDataAnalyzer(QMainWindow):
         self.info_label = QLabel("Hover over points on the map to view details.")
         layout.addWidget(self.info_label)
 
+        # "Show All Data" button
+        self.show_data_btn = QPushButton("Show All Data for This Point")
+        self.show_data_btn.clicked.connect(self.show_all_data_for_point)
+        layout.addWidget(self.show_data_btn)
+
         # Graphs
         graph_layout = QHBoxLayout()
         self.rpm_canvas = FigureCanvas(plt.figure())
@@ -164,30 +185,36 @@ class RaceDataAnalyzer(QMainWindow):
         # Initial graph update
         self.update_graphs(0)
 
+    def show_all_data_for_point(self):
+        idx = self.slider.value()
+        row = self.data.iloc[idx]
+        # Convert row to dict, replacing NaN with "N/A"
+        data_dict = {col: (row[col] if pd.notnull(row[col]) else "N/A") for col in self.data.columns}
+        dlg = DataPointDialog(data_dict, self)
+        dlg.exec_()
+
     def update_graphs(self, index):
         # Clear existing axes
         self.rpm_canvas.figure.clf()
         self.speed_canvas.figure.clf()
 
-        # Prepare data for plotting
-        start = max(0, index - 10)
-        end = min(len(self.data), index + 10)
-        rpm_data = self.data[self.rpm_col][start:end].fillna(0)
-        speed_data = self.data[self.speed_col][start:end].fillna(0)
-
         # Update RPM graph
         rpm_ax = self.rpm_canvas.figure.add_subplot(111)
-        rpm_ax.plot(range(start - index, end - index), rpm_data, label='RPM')
+        start = max(0, index - 10)
+        end = min(len(self.data), index + 10)
+        if self.rpm_col:
+            rpm_ax.plot(range(start - index, end - index), self.data[self.rpm_col][start:end], label='RPM')
         rpm_ax.axvline(0, color='red', linestyle='--', label='Current Point')
-        rpm_ax.set_ylim(0, 18000)
+        rpm_ax.set_ylim(0, 18000)  # Limit y-axis for RPM
         rpm_ax.legend()
         self.rpm_canvas.draw()
 
         # Update Speed graph
         speed_ax = self.speed_canvas.figure.add_subplot(111)
-        speed_ax.plot(range(start - index, end - index), speed_data, label='Speed (km/h)')
+        if self.speed_col:
+            speed_ax.plot(range(start - index, end - index), self.data[self.speed_col][start:end], label='Speed (km/h)')
         speed_ax.axvline(0, color='red', linestyle='--', label='Current Point')
-        speed_ax.set_ylim(0, 120)
+        speed_ax.set_ylim(0, 120)  # Limit y-axis for Speed
         speed_ax.legend()
         self.speed_canvas.draw()
 

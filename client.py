@@ -296,6 +296,12 @@ class TestClientApp(QWidget):
         if len(self.speed_data) > self.max_time_window:
             self.speed_data = self.speed_data[-self.max_time_window:]
 
+        # Update the map window if open
+        if self.map_window:
+            latitude = gps_data.get("Latitude", 0)
+            longitude = gps_data.get("Longitude", 0)
+            self.map_window.update_marker(latitude, longitude)
+
     def update_graph(self):
         # Generate "T-" time values for the x-axis
         time_values = list(range(-len(self.rpm_data), 0))
@@ -305,10 +311,12 @@ class TestClientApp(QWidget):
         self.speed_curve.setData(time_values, self.speed_data)
 
     def start_recording(self):
+        # Flatten the current data structure to get all keys for the header
+        flat_data = self.flatten_dict(self.data)
+        self.csv_header = list(flat_data.keys())
         self.csv_file = open('recorded_data.csv', 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        # Add Timestamp to the CSV header
-        self.csv_writer.writerow(['Timestamp', 'Speed (km/h)', 'RPM', 'Gear Position', 'Linear Acceleration', 'Latitude', 'Longitude'])
+        self.csv_writer.writerow(self.csv_header)
         self.recording = True
         self.start_recording_button.setEnabled(False)
         self.stop_recording_button.setEnabled(True)
@@ -322,17 +330,21 @@ class TestClientApp(QWidget):
 
     def record_data_to_csv(self):
         if self.recording and self.csv_writer:
-            imu_data = self.data.get("IMU Data", {})
-            gps_data = self.data.get("GPS Data", {})
-            timestamp = self.data.get("Timestamp", "N/A")  # Get the timestamp
-            speed = imu_data.get("Speed", "N/A")
-            rpm = imu_data.get("RPM", "N/A")
-            gear = imu_data.get("Gear Position", "N/A")
-            linear_acceleration = imu_data.get("Linear Acceleration", "N/A")
-            latitude = gps_data.get("Latitude", "N/A")
-            longitude = gps_data.get("Longitude", "N/A")
-            # Include Timestamp in the CSV row
-            self.csv_writer.writerow([timestamp, speed, rpm, gear, linear_acceleration, latitude, longitude])
+            flat_data = self.flatten_dict(self.data)
+            # Ensure all columns are present in the same order as the header
+            row = [flat_data.get(col, "N/A") for col in self.csv_header]
+            self.csv_writer.writerow(row)
+
+    def flatten_dict(self, d, parent_key='', sep='.'):
+        """Recursively flattens a nested dictionary."""
+        items = {}
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.update(self.flatten_dict(v, new_key, sep=sep))
+            else:
+                items[new_key] = v
+        return items
 
     def show_map_window(self):
         if not self.map_window:
