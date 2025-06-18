@@ -186,10 +186,10 @@ def get_rs232_data():
 
                 return {
                     'RPM': rpm,
-                    'Throttle Position (%)': throttle_pos,
-                    'Engine Temperature (°C)': engine_temp,
-                    'Drive Speed (km/h)': drive_speed,
-                    'Ground Speed (km/h)': ground_speed,
-                    'Gear': gear
+                    'Throttle Position': throttle_pos,
+                    'Engine Temperature': engine_temp,
+                    'Drive Speed': drive_speed,
+                    'Ground Speed': ground_speed,
+                    'Gear': str(gear)  # Ensure gear is a string for display
                 }
     return None

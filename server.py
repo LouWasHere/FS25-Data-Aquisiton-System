@@ -67,13 +67,29 @@ def mock_get_gps_data():
 def mock_get_serial_data():
     # Simulate sensor values oscillating
     current_time = time.time()
-    rpm = int((math.sin(current_time) + 1) * 7500)  # Oscillates between 0 and 15000
-    speed = int((math.sin(current_time / 2) + 1) * 45)  # Oscillates between 0 and 90
-    gear = str(int((math.sin(current_time / 3) + 1) * 3))  # Oscillates between 0 and 6
+    wheel_speed = int((math.sin(current_time) + 1) * 7500)  # Oscillates between 0 and 15000
+    neutral_flag = int((math.sin(current_time / 2) + 1))  # Oscillates between 0 and 1
 
     return {
+        "Wheel Speed": wheel_speed,
+        "Neutral Flag": neutral_flag,
+    }
+
+def mock_get_rs232_data():
+    # Simulate RS232 data
+    current_time = time.time()
+    rpm = int((math.sin(current_time) + 1) * 7500)  # Oscillates between 0 and 15000
+    throttle_position = int((math.sin(current_time / 2) + 1) * 100)  # Oscillates between 0 and 100
+    engine_temperature = int((math.sin(current_time / 3) + 1) * 100)  # Oscillates between 0 and 100
+    drive_speed = int((math.sin(current_time / 4) + 1) * 90)  # Oscillates between 0 and 90
+    ground_speed = int((math.sin(current_time / 5) + 1) * 90)  # Oscillates between 0 and 90
+    gear = str(int((math.sin(current_time / 6) + 1) * 3))  # Oscillates between 0 and 6
+    return {
         "RPM": rpm,
-        "Speed": speed,
+        "Throttle Position": throttle_position,
+        "Engine Temperature": engine_temperature,
+        "Drive Speed": drive_speed,
+        "Ground Speed": ground_speed,
         "Gear": gear
     }
 
@@ -120,14 +136,19 @@ class SensorWindow(QMainWindow):
         self.connection_label.setStyleSheet("font-size: 14pt; color: #00FF00; qproperty-alignment: AlignCenter;")
         self.ngrok_url_displayed = False  # Track if we've set the ngrok URL
 
+        # Engine Temperature Label
+        self.engine_temp_label = QLabel("Engine Temp: -- °C")
+        self.engine_temp_label.setStyleSheet("font-size: 18pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
+
         # Add widgets to the layout
         self.layout.addWidget(self.rpm_bar, 0, 0, 1, 3)  # RPM bar spans 3 columns
         self.layout.addWidget(self.rpm_label, 1, 0, 1, 3)  # RPM label spans 3 columns
         self.layout.addWidget(self.speed_bar, 2, 0, 1, 3)  # Speed bar spans 3 columns
         self.layout.addWidget(self.speed_label, 3, 0, 1, 3)  # Speed label spans 3 columns
-        self.layout.addWidget(self.logo_label, 4, 0)  # Logo in bottom-left
-        self.layout.addWidget(self.gear_label, 4, 1)  # Gear position in bottom-center
-        self.layout.addWidget(self.connection_label, 4, 2)  # Connection status in bottom-right
+        self.layout.addWidget(self.engine_temp_label, 4, 0, 1, 3)  # Engine temp label spans 3 columns
+        self.layout.addWidget(self.logo_label, 5, 0)  # Logo in bottom-left
+        self.layout.addWidget(self.gear_label, 5, 1)  # Gear position in bottom-center
+        self.layout.addWidget(self.connection_label, 5, 2)  # Connection status in bottom-right
 
         # Set the layout
         container = QWidget()
@@ -143,18 +164,19 @@ class SensorWindow(QMainWindow):
         with data_lock:
             if not sensor_data.empty():
                 latest_data = sensor_data.get()
-                # print(f"Debug: latest_data in update_sensor_data = {latest_data}")  # Debug print
+                # Get RS232 and Serial data safely
+                rs232_data = latest_data.get("RS232 Data", {"RPM": 0, "Gear": "N", "Engine Temperature": 0})
+                serial_data = latest_data.get("Serial Data", {"Wheel Speed": 0})
 
-                # Use .get to avoid KeyError if 'Serial Data' is missing
-                serial_data = latest_data.get("Serial Data", {"RPM": 0, "Speed": 0, "Gear": "N"})
-                rpm = int(serial_data.get("RPM", 0))
+                # RPM from RS232
+                rpm = int(rs232_data.get("RPM", 0))
                 self.rpm_bar.setValue(rpm)
                 self.rpm_label.setText(f"{rpm} RPM")
-                if rpm > 11250:  # Over 3/4 of 15000
+                if rpm > 11250:
                     self.rpm_bar.setStyleSheet(
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: red; }"
                     )
-                elif rpm > 7500:  # Over half of 15000
+                elif rpm > 7500:
                     self.rpm_bar.setStyleSheet(
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: orange; }"
                     )
@@ -163,14 +185,15 @@ class SensorWindow(QMainWindow):
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
                     )
 
-                speed = int(serial_data.get("Speed", 0))
+                # Speed from Serial (Wheel Speed)
+                speed = int(serial_data.get("Wheel Speed", 0))
                 self.speed_bar.setValue(speed)
                 self.speed_label.setText(f"{speed} km/h")
-                if speed > 67:  # Over 3/4 of 90
+                if speed > 67:
                     self.speed_bar.setStyleSheet(
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: red; }"
                     )
-                elif speed > 45:  # Over half of 90
+                elif speed > 45:
                     self.speed_bar.setStyleSheet(
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: orange; }"
                     )
@@ -179,9 +202,21 @@ class SensorWindow(QMainWindow):
                         "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
                     )
 
-                gear = serial_data.get("Gear", "N")
+                # Engine Temperature from RS232
+                engine_temp = rs232_data.get("Engine Temperature", 0)
+                try:
+                    temp_val = float(engine_temp)
+                except (ValueError, TypeError):
+                    temp_val = 0
+                self.engine_temp_label.setText(f"Engine Temp: {temp_val:.1f} °C")
+                if temp_val > 60:
+                    self.engine_temp_label.setStyleSheet("font-size: 18pt; color: #FF0000; qproperty-alignment: AlignCenter;")
+                else:
+                    self.engine_temp_label.setStyleSheet("font-size: 18pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
+
+                # Gear from RS232
+                gear = rs232_data.get("Gear", "N")
                 self.gear_label.setText(gear)
-                # print(f"Debug: latest_data = {latest_data}")
 
                 # Update Connection Status
                 if TEST_MODE:
@@ -209,10 +244,12 @@ def data_acquisition_thread():
             imu_data = mock_get_imu_data()
             gps_data = mock_get_gps_data()
             serial_data = mock_get_serial_data()
+            rs232_data = mock_get_rs232_data()
         else:
             imu_data = sensor_reading.get_imu_data()
             gps_data = sensor_reading.get_gps_data()
             serial_data = sensor_reading.get_serial_data()
+            rs232_data = sensor_reading.get_rs232_data()
 
         with data_lock:
             # Add a timestamp to the sensor data
@@ -222,7 +259,8 @@ def data_acquisition_thread():
                 "Timestamp": timestamp,  # Add the timestamp here
                 "IMU Data": imu_data,
                 "GPS Data": gps_data,
-                "Serial Data": serial_data
+                "Serial Data": serial_data,
+                "RS232 Data": rs232_data
             }
             # Add the data to the queue for UI updates
             sensor_data.put(latest_sensor_data)
@@ -327,7 +365,8 @@ def networking_thread():
                     "Timestamp": "",
                     "IMU Data": {},
                     "GPS Data": {},
-                    "Serial Data": {"RPM": 0, "Speed": 0, "Gear": "N"}
+                    "Serial Data": {"RPM": 0, "Speed": 0, "Gear": "N"},
+                    "RS232 Data": {"RPM": 0, "Throttle Position": 0, "Engine Temperature": 0, "Drive Speed": 0, "Ground Speed": 0, "Gear": "N"}
                 }
             data["Ngrok URL"] = ngrok_url
             latest_sensor_data = data
