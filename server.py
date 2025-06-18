@@ -19,7 +19,7 @@ except ImportError:
 stop_event = threading.Event()
 
 # Enable testing mode
-TEST_MODE = False
+TEST_MODE = True
 
 # Temporary host and port for testing
 HOST = "0.0.0.0"

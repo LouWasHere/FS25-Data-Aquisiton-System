@@ -137,9 +137,9 @@ class TestClientApp(QWidget):
         timestamp_layout.addWidget(self.timestamp_label)
         layout.addLayout(timestamp_layout, 0, 0, 1, 4)  # Spans the entire top row
 
-        # Create labels for IMU Data
+        # Create labels for IMU Data and Engine Temperature
         self.data_labels = {}
-        keys = ["RPM", "Speed", "Gear Position", "Linear Acceleration", "Gyro X", "Gyro Y", "Gyro Z", "Compass Angle"]
+        keys = ["RPM", "Speed", "Gear Position", "Linear Acceleration", "Engine Temperature"]
         for i, key in enumerate(keys):
             label_key = QLabel(f"{key}:")
             label_key.setStyleSheet("font-size: 14px; font-weight: bold;")
@@ -247,6 +247,7 @@ class TestClientApp(QWidget):
         # Match the data sent in server.py
         imu_data = self.data.get("IMU Data", {})
         serial_data = self.data.get("Serial Data", {})
+        rs232_data = self.data.get("RS232 Data", {})
         gps_data = self.data.get("GPS Data", {})
         timestamp = self.data.get("Timestamp", "N/A")
 
@@ -255,24 +256,39 @@ class TestClientApp(QWidget):
         # Map UI keys to their data sources as per server.py
         for key, label in self.data_labels.items():
             if key == "RPM":
-                value = serial_data.get("RPM", "N/A")
+                value = rs232_data.get("RPM", "N/A")
             elif key == "Speed":
-                value = serial_data.get("Speed", "N/A")
+                value = serial_data.get("Wheel Speed", "N/A")
             elif key == "Gear Position":
-                value = serial_data.get("Gear", "N/A")
+                value = rs232_data.get("Gear", "N/A")
+            elif key == "Engine Temperature":
+                temp = rs232_data.get("Engine Temperature", "N/A")
+                try:
+                    temp_val = float(temp)
+                except (ValueError, TypeError):
+                    temp_val = 0
+                value = f"{temp_val:.1f} °C"
+                if temp_val > 60:
+                    label.setStyleSheet("font-size: 14px; color: #FF0000;")
+                else:
+                    label.setStyleSheet("font-size: 14px; color: #FFFFFF;")
             else:
                 value = imu_data.get(key, "N/A")
             label.setText(str(value))
 
-        # Update the map window if open
-        if self.map_window:
-            latitude = gps_data.get("Latitude", 0)
-            longitude = gps_data.get("Longitude", 0)
-            self.map_window.update_marker(latitude, longitude)
-
-        # Update graph data (RPM and Speed from Serial Data)
-        self.rpm_data.append(serial_data.get("RPM", 0))
-        self.speed_data.append(serial_data.get("Speed", 0))
+        # Update graph data (RPM and Speed from correct sources)
+        rpm_val = rs232_data.get("RPM", 0)
+        speed_val = serial_data.get("Wheel Speed", 0)
+        try:
+            rpm_val = float(rpm_val)
+        except (ValueError, TypeError):
+            rpm_val = 0
+        try:
+            speed_val = float(speed_val)
+        except (ValueError, TypeError):
+            speed_val = 0
+        self.rpm_data.append(rpm_val)
+        self.speed_data.append(speed_val)
 
         # Keep only the last 20 seconds of data
         if len(self.rpm_data) > self.max_time_window:
@@ -291,8 +307,7 @@ class TestClientApp(QWidget):
     def start_recording(self):
         self.csv_file = open('recorded_data.csv', 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        # Add Timestamp to the CSV header
-        self.csv_writer.writerow(['Timestamp', 'Speed (km/h)', 'RPM', 'Gear Position', 'Linear Acceleration', 'Latitude', 'Longitude'])
+        # Do NOT write a fixed header here; it will be written dynamically in record_data_to_csv
         self.recording = True
         self.start_recording_button.setEnabled(False)
         self.stop_recording_button.setEnabled(True)
@@ -305,18 +320,26 @@ class TestClientApp(QWidget):
         self.stop_recording_button.setEnabled(False)
 
     def record_data_to_csv(self):
-        if self.recording and self.csv_writer:
-            imu_data = self.data.get("IMU Data", {})
-            gps_data = self.data.get("GPS Data", {})
-            timestamp = self.data.get("Timestamp", "N/A")  # Get the timestamp
-            speed = imu_data.get("Speed", "N/A")
-            rpm = imu_data.get("RPM", "N/A")
-            gear = imu_data.get("Gear Position", "N/A")
-            linear_acceleration = imu_data.get("Linear Acceleration", "N/A")
-            latitude = gps_data.get("Latitude", "N/A")
-            longitude = gps_data.get("Longitude", "N/A")
-            # Include Timestamp in the CSV row
-            self.csv_writer.writerow([timestamp, speed, rpm, gear, linear_acceleration, latitude, longitude])
+        if not self.csv_file or not self.csv_writer:
+            return
+
+        # Flatten the nested data dictionary
+        flat_data = {}
+        for section in ["IMU Data", "Serial Data", "RS232 Data", "GPS Data"]:
+            section_data = self.data.get(section, {})
+            for key, value in section_data.items():
+                flat_data[f"{section}.{key}"] = value
+        # Add timestamp if present
+        if "Timestamp" in self.data:
+            flat_data["Timestamp"] = self.data["Timestamp"]
+
+        # Write header if file is empty
+        if self.csv_file.tell() == 0:
+            self.csv_writer.writerow(flat_data.keys())
+
+        # Write the row
+        self.csv_writer.writerow(flat_data.values())
+        self.csv_file.flush()
 
     def show_map_window(self):
         if not self.map_window:
