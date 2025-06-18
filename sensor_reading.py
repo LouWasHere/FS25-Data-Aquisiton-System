@@ -24,6 +24,9 @@ arduinoSerial.flush()
 
 power_key = 6
 
+rs232 = serial.Serial('/dev/ttyAMA1', 9600, timeout=1)
+rs232.flush() 
+
 def get_imu_data():
     if sensor is None:
         return {"Error": "I2C connection failed, using dummy data"}
@@ -138,6 +141,32 @@ def get_serial_data():
         print(f"Failed to read serial data: {e}. Data: {data}")
         return {"Error": f"Failed to read serial data: {e}"}
 
+def get_rs232_data():
+    if rs232.in_waiting > 143:
+        data = rs232.read(144)  # Full packet size
+
+        # Confirm marker bytes at positions 140, 141, 142
+        if data[140] == 0xFC and data[141] == 0xFB and data[142] == 0xFA:
+            # Compute checksum to validate (optional but recommended)
+            checksum = sum(data[:143]) & 0xFF
+            if checksum == data[143]:
+                rpm = int.from_bytes(data[0:2], byteorder='big')
+                throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
+                engine_temp = int.from_bytes(data[8:10], byteorder='big') * 0.1
+                drive_speed = int.from_bytes(data[56:58], byteorder='big') * 0.1
+                ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
+                gear = int.from_bytes(data[104:106], byteorder='big') // 10
+
+                return {
+                    'RPM': rpm,
+                    'Throttle Position': throttle_pos,
+                    'Engine Temperature': engine_temp,
+                    'Drive Speed': drive_speed,
+                    'Ground Speed': ground_speed,
+                    'Gear': str(gear)  # Ensure gear is a string for display
+                }
+    return None
+
 def power_on(power_key):
     try:
         print('SIM7600X is starting:')
@@ -165,31 +194,3 @@ def power_down(power_key):
     except Exception as e:
         print(f"Failed to power down SIM7600X: {e}")   
 
-rs232 = serial.Serial('/dev/ttyAMA1', 9600, timeout=1)
-rs232.flush() 
-
-def get_rs232_data():
-    if rs232.in_waiting > 143:
-        data = rs232.read(144)  # Full packet size
-
-        # Confirm marker bytes at positions 140, 141, 142
-        if data[140] == 0xFC and data[141] == 0xFB and data[142] == 0xFA:
-            # Compute checksum to validate (optional but recommended)
-            checksum = sum(data[:143]) & 0xFF
-            if checksum == data[143]:
-                rpm = int.from_bytes(data[0:2], byteorder='big')
-                throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
-                engine_temp = int.from_bytes(data[8:10], byteorder='big') * 0.1
-                drive_speed = int.from_bytes(data[56:58], byteorder='big') * 0.1
-                ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
-                gear = int.from_bytes(data[104:106], byteorder='big') // 10
-
-                return {
-                    'RPM': rpm,
-                    'Throttle Position': throttle_pos,
-                    'Engine Temperature': engine_temp,
-                    'Drive Speed': drive_speed,
-                    'Ground Speed': ground_speed,
-                    'Gear': str(gear)  # Ensure gear is a string for display
-                }
-    return None
