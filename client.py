@@ -307,7 +307,8 @@ class TestClientApp(QWidget):
     def start_recording(self):
         self.csv_file = open('recorded_data.csv', 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        # Do NOT write a fixed header here; it will be written dynamically in record_data_to_csv
+        # Add Timestamp to the CSV header
+        self.csv_writer.writerow(['Timestamp', 'Speed (km/h)', 'RPM', 'Gear Position', 'Linear Acceleration', 'Latitude', 'Longitude'])
         self.recording = True
         self.start_recording_button.setEnabled(False)
         self.stop_recording_button.setEnabled(True)
@@ -320,26 +321,18 @@ class TestClientApp(QWidget):
         self.stop_recording_button.setEnabled(False)
 
     def record_data_to_csv(self):
-        if not self.csv_file or not self.csv_writer:
-            return
-
-        # Flatten the nested data dictionary
-        flat_data = {}
-        for section in ["IMU Data", "Serial Data", "RS232 Data", "GPS Data"]:
-            section_data = self.data.get(section, {})
-            for key, value in section_data.items():
-                flat_data[f"{section}.{key}"] = value
-        # Add timestamp if present
-        if "Timestamp" in self.data:
-            flat_data["Timestamp"] = self.data["Timestamp"]
-
-        # Write header if file is empty
-        if self.csv_file.tell() == 0:
-            self.csv_writer.writerow(flat_data.keys())
-
-        # Write the row
-        self.csv_writer.writerow(flat_data.values())
-        self.csv_file.flush()
+        if self.recording and self.csv_writer:
+            imu_data = self.data.get("IMU Data", {})
+            gps_data = self.data.get("GPS Data", {})
+            timestamp = self.data.get("Timestamp", "N/A")  # Get the timestamp
+            speed = imu_data.get("Speed", "N/A")
+            rpm = imu_data.get("RPM", "N/A")
+            gear = imu_data.get("Gear Position", "N/A")
+            linear_acceleration = imu_data.get("Linear Acceleration", "N/A")
+            latitude = gps_data.get("Latitude", "N/A")
+            longitude = gps_data.get("Longitude", "N/A")
+            # Include Timestamp in the CSV row
+            self.csv_writer.writerow([timestamp, speed, rpm, gear, linear_acceleration, latitude, longitude])
 
     def show_map_window(self):
         if not self.map_window:
