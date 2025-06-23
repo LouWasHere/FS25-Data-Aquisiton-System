@@ -138,7 +138,7 @@ def get_serial_data():
             return parsed_data
         return {"Error": "No data available"}
     except Exception as e:
-        print(f"Failed to read serial data: {e}. Data: {data}")
+        print(f"Failed to read serial data: {e}.")
         return {"Error": f"Failed to read serial data: {e}"}
 
 def get_rs232_data():
