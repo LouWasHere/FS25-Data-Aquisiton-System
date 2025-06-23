@@ -213,7 +213,7 @@ class SensorWindow(QMainWindow):
 
                 # Gear from RS232
                 gear = rs232_data.get("Gear", "N")
-                self.gear_label.setText(gear)
+                self.gear_label.setText(str(gear))
 
                 # Update Connection Status
                 if TEST_MODE:
