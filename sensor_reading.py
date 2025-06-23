@@ -24,7 +24,7 @@ arduinoSerial.flush()
 
 power_key = 6
 
-rs232 = serial.Serial('/dev/ttyAMA5', 9600, timeout=1)
+rs232 = serial.Serial('/dev/ttyAMA5', 19200, timeout=1)
 rs232.flush() 
 
 def get_imu_data():
