@@ -19,7 +19,7 @@ except ImportError:
 stop_event = threading.Event()
 
 # Enable testing mode
-TEST_MODE = False
+TEST_MODE = True
 
 # Temporary host and port for testing
 HOST = "0.0.0.0"
@@ -109,13 +109,7 @@ class SensorWindow(QMainWindow):
         self.rpm_label = QLabel("0 RPM")
         self.rpm_label.setStyleSheet("font-size: 24pt; color: #00FF00; qproperty-alignment: AlignCenter;")
 
-        # Speed Bar and Label
-        self.speed_bar = QProgressBar()
-        self.speed_bar.setRange(0, 90)  # Speed range: 0 to 90 km/h
-        self.speed_bar.setTextVisible(False)
-        self.speed_bar.setStyleSheet(
-            "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
-        )
+        # Speed Label (no bar)
         self.speed_label = QLabel("0 km/h")
         self.speed_label.setStyleSheet("font-size: 24pt; color: #00FF00; qproperty-alignment: AlignCenter;")
 
@@ -140,11 +134,10 @@ class SensorWindow(QMainWindow):
         # Add widgets to the layout
         self.layout.addWidget(self.rpm_bar, 0, 0, 1, 3)  # RPM bar spans 3 columns
         self.layout.addWidget(self.rpm_label, 1, 0, 1, 3)  # RPM label spans 3 columns
-        self.layout.addWidget(self.speed_bar, 2, 0, 1, 3)  # Speed bar spans 3 columns
-        self.layout.addWidget(self.speed_label, 3, 0, 1, 3)  # Speed label spans 3 columns
-        self.layout.addWidget(self.engine_temp_label, 4, 0, 1, 3)  # Engine temp label spans 3 columns
+        self.layout.addWidget(self.gear_label, 2, 1)  # Gear position in center
+        self.layout.addWidget(self.speed_label, 3, 1)  # Speed label below gear in center
+        self.layout.addWidget(self.engine_temp_label, 4, 1)  # Engine temp label below speed in center
         self.layout.addWidget(self.logo_label, 5, 0)  # Logo in bottom-left
-        self.layout.addWidget(self.gear_label, 5, 1)  # Gear position in bottom-center
         self.layout.addWidget(self.connection_label, 5, 2)  # Connection status in bottom-right
 
         # Set the layout
@@ -184,20 +177,7 @@ class SensorWindow(QMainWindow):
 
                 # Speed from Serial (Wheel Speed)
                 speed = int(serial_data.get("Wheel Speed", 0))
-                self.speed_bar.setValue(speed)
                 self.speed_label.setText(f"{speed} km/h")
-                if speed > 67:
-                    self.speed_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: red; }"
-                    )
-                elif speed > 45:
-                    self.speed_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: orange; }"
-                    )
-                else:
-                    self.speed_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
-                    )
 
                 # Engine Temperature from RS232
                 engine_temp = rs232_data.get("Engine Temperature", 0)
