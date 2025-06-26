@@ -218,14 +218,16 @@ class TestClientApp(QWidget):
     def connect_to_server(self):
         server_host = self.address_input.text()
         server_port = int(self.port_input.text())
-
+        print(f"Trying to connect to {server_host}:{server_port}")
         try:
             self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client.connect((server_host, server_port))
+            print("Connected!")
             self.running = True
             self.stacked_widget.setCurrentWidget(self.connected_screen)
             threading.Thread(target=self.receive_data, daemon=True).start()
         except Exception as e:
+            print(f"Failed to connect: {e}")
             QMessageBox.critical(self, "Connection Error", f"Failed to connect to server: {e}")
 
     def receive_data(self):
