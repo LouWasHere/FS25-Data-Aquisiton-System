@@ -8,4 +8,3 @@ void loop() {
   Serial1.print("Wheel Speed:12345,Neutral Flag:0,Killswitch:0\n");
   delay(500);
 }
-`
