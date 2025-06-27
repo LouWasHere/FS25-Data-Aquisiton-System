@@ -19,7 +19,7 @@ except ImportError:
 stop_event = threading.Event()
 
 # Enable testing mode
-TEST_MODE = True
+TEST_MODE = False
 
 # Temporary host and port for testing
 HOST = "0.0.0.0"
@@ -155,7 +155,7 @@ class SensorWindow(QMainWindow):
             if not sensor_data.empty():
                 latest_data = sensor_data.get()
                 # Get RS232 and Serial data safely
-                rs232_data = latest_data.get("RS232 Data", {"RPM": 0, "Gear": "N", "Engine Temperature": 0})
+                rs232_data = latest_data.get("RS232 Data", {"RPM": 0, "Gear": "N", "Engine Temperature": 0, "Drive Speed": 0, "Ground Speed": 0, "Throttle Position": 0})
                 serial_data = latest_data.get("Serial Data", {"Wheel Speed": 0})
 
                 # RPM from RS232
@@ -176,7 +176,7 @@ class SensorWindow(QMainWindow):
                     )
 
                 # Speed from Serial (Wheel Speed)
-                speed = int(serial_data.get("Wheel Speed", 0))
+                speed = int(rs232_data.get("Ground Speed", 0))
                 self.speed_label.setText(f"{speed} km/h")
 
                 # Engine Temperature from RS232
