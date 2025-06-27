@@ -1,9 +1,12 @@
 import serial
+import time
 
-ser = serial.Serial("/dev/ttyAMA5", 19200)
+ser = serial.Serial("/dev/ttyAMA5", 115200, timeout=1)
 
-print("Waiting for input...")
-while True:
-    if ser.in_waiting:
-        line = ser.readline().decode(errors="ignore").strip()
-        print("Received:", line)
+test_string = "Hello, loopback!\n"
+ser.write(test_string.encode())
+time.sleep(0.1)
+response = ser.read(len(test_string))
+print("Received: ",response.decode())
+
+ser.close()
