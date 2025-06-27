@@ -260,7 +260,7 @@ class TestClientApp(QWidget):
             if key == "RPM":
                 value = rs232_data.get("RPM", "N/A")
             elif key == "Speed":
-                value = serial_data.get("Wheel Speed", "N/A")
+                value = rs232_data.get("Ground Speed", "N/A")
             elif key == "Gear Position":
                 value = rs232_data.get("Gear", "N/A")
             elif key == "Engine Temperature":
