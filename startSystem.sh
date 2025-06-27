@@ -6,4 +6,4 @@ ngrok tcp 22 &
 sleep 5
 kill -9 "$(pgrep ngrok)"
 sleep 1
-python3 Documents/server.py &
+python3 /home/daq/Documents/server.py &
