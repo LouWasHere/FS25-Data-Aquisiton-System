@@ -19,7 +19,7 @@ except ImportError:
 stop_event = threading.Event()
 
 # Enable testing mode
-TEST_MODE = False
+TEST_MODE = True
 
 # Temporary host and port for testing
 HOST = "0.0.0.0"
@@ -94,10 +94,13 @@ class SensorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Car Dashboard")
+        self.setFixedSize(480, 320)  # Fixed size to prevent stretching
         self.setGeometry(0, 0, 480, 320)  # Adjusted for 480x320 resolution
         self.setStyleSheet("background-color: black;")
 
         self.layout = QGridLayout()
+        self.layout.setSpacing(5)  # Add consistent spacing
+        self.layout.setContentsMargins(10, 10, 10, 10)  # Add margins
 
         # RPM Bar and Label
         self.rpm_bar = QProgressBar()
@@ -107,7 +110,7 @@ class SensorWindow(QMainWindow):
             "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
         )
         self.rpm_label = QLabel("0 RPM")
-        self.rpm_label.setStyleSheet("font-size: 24pt; color: #00FF00; qproperty-alignment: AlignCenter;")
+        self.rpm_label.setStyleSheet("font-size: 18pt; color: #00FF00; qproperty-alignment: AlignCenter;")
 
         # Speed Label (no bar)
         self.speed_label = QLabel("0 km/h")
@@ -129,7 +132,7 @@ class SensorWindow(QMainWindow):
 
         # Engine Temperature Label
         self.engine_temp_label = QLabel("Engine Temp: -- °C")
-        self.engine_temp_label.setStyleSheet("font-size: 18pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
+        self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
 
         # Add widgets to the layout
         self.layout.addWidget(self.rpm_bar, 0, 0, 1, 3)  # RPM bar spans 3 columns
@@ -138,7 +141,7 @@ class SensorWindow(QMainWindow):
         self.layout.addWidget(self.speed_label, 3, 1)  # Speed label below gear in center
         self.layout.addWidget(self.engine_temp_label, 4, 1)  # Engine temp label below speed in center
         self.layout.addWidget(self.logo_label, 5, 0)  # Logo in bottom-left
-        self.layout.addWidget(self.connection_label, 5, 2)  # Connection status in bottom-right
+        self.layout.addWidget(self.connection_label, 5, 1)  # Connection status in bottom-center
 
         # Set the layout
         container = QWidget()
@@ -187,9 +190,9 @@ class SensorWindow(QMainWindow):
                     temp_val = 0
                 self.engine_temp_label.setText(f"Engine Temp: {temp_val:.1f} °C")
                 if temp_val > 60:
-                    self.engine_temp_label.setStyleSheet("font-size: 18pt; color: #FF0000; qproperty-alignment: AlignCenter;")
+                    self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FF0000; qproperty-alignment: AlignCenter;")
                 else:
-                    self.engine_temp_label.setStyleSheet("font-size: 18pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
+                    self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
 
                 # Gear from RS232
                 gear = rs232_data.get("Gear", "N")
@@ -248,7 +251,7 @@ def ui_thread():
     app = QApplication([])
     window = SensorWindow()
     app.aboutToQuit.connect(stop_event.set)  # Ensure stop_event is set when the app quits
-    window.showFullScreen()
+    window.show()  # Use show() instead of showFullScreen() to respect window size
     app.exec_()
 
 # Function for networking
