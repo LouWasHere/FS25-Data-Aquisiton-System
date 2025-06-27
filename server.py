@@ -19,7 +19,7 @@ except ImportError:
 stop_event = threading.Event()
 
 # Enable testing mode
-TEST_MODE = True
+TEST_MODE = False
 
 # Temporary host and port for testing
 HOST = "0.0.0.0"
@@ -251,7 +251,7 @@ def ui_thread():
     app = QApplication([])
     window = SensorWindow()
     app.aboutToQuit.connect(stop_event.set)  # Ensure stop_event is set when the app quits
-    window.show()  # Use show() instead of showFullScreen() to respect window size
+    window.showFullScreen()  # Use show() instead of showFullScreen() to respect window size
     app.exec_()
 
 # Function for networking
