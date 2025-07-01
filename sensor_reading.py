@@ -6,6 +6,7 @@ import math
 import board
 import adafruit_mpu6050
 
+# Initialize I2C for MPU6050 sensor
 try:
     i2c = board.I2C()  # uses board.SCL and board.SDA
     # Add a delay to ensure the sensor is ready
@@ -16,18 +17,20 @@ except Exception as e:
     print(f"Failed to initialize I2C connection: {e}")
     sensor = None
 
+# Initialize serial connections (ttyS0 for SIM7600X, ttyAMA2 for Arduino, ttyAMA5 for RS232)
 ser = serial.Serial('/dev/ttyS0', 115200)
 ser.flushInput()
 
 arduinoSerial = serial.Serial('/dev/ttyAMA2', 9600, timeout=1)
 arduinoSerial.flush()
 
-power_key = 6
-
 rs232 = serial.Serial('/dev/ttyAMA5', 19200, timeout=1)
 rs232.flush() 
 
+power_key = 6
+
 def get_imu_data():
+    # Check if the sensor is initialized
     if sensor is None:
         return {"Error": "I2C connection failed, using dummy data"}
 
@@ -70,6 +73,7 @@ def get_imu_data():
 
     return data
 
+# Decode GPS data from SIM7600X module (code lifted from template)
 def send_at(command, back, timeout):
     rec_buff = ''
     ser.write((command + '\r\n').encode())
@@ -112,6 +116,7 @@ def send_at(command, back, timeout):
         print('GPS is not ready')
         return None
 
+# Get GPS data from SIM7600X module
 def get_gps_data():
     print('Start GPS session...')
     send_at('AT+CGPS=1,1', 'OK', 1)
@@ -124,6 +129,7 @@ def get_gps_data():
         return {"Latitude": 53.8067, "Longitude": 1.5550}  # Replace with your desired dummy coordinates
     return gps_data
 
+# Read serial data from Arduino (analog sensor reading)
 def get_serial_data():
     print("Reading serial data from Arduino...")
     try:
@@ -145,6 +151,7 @@ def get_serial_data():
 rs232_buffer = bytearray()
 rs232_synchronized = False
 
+# Function to read and process RS232 data packets synchronously
 def get_rs232_data():
     global rs232_buffer, rs232_synchronized
     
@@ -156,7 +163,7 @@ def get_rs232_data():
             data_chunk = rs232.read(available_bytes)
             rs232_buffer.extend(data_chunk)
         
-        # If we're not synchronized, try to find the start of a valid message
+        # If we're not synchronized, try to find the end of a valid message
         if not rs232_synchronized:
             # Look for marker bytes pattern (0xFC, 0xFB, 0xFA) in the buffer
             for i in range(len(rs232_buffer) - 2):
@@ -250,6 +257,7 @@ def get_rs232_data():
             'Gear': -1
         }
 
+# Power on and power down functions for SIM7600X module
 def power_on(power_key):
     try:
         print('SIM7600X is starting:')
