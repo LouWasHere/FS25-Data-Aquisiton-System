@@ -143,29 +143,29 @@ def get_serial_data():
 
 def get_rs232_data():
     try:
-        if rs232.in_waiting > 127:
-            data = rs232.read(128)  # Full packet size
+        if rs232.in_waiting > 143:
+            data = rs232.read(144)  # Full packet size
 
             # Confirm marker bytes at positions 140, 141, 142
-            # if data[124] == 0xFC and data[125] == 0xFB and data[126] == 0xFA:
+            if data[140] == 0xFC and data[141] == 0xFB and data[142] == 0xFA:
                 # Compute checksum to validate (optional but recommended)
-                # checksum = sum(data[:127]) & 0xFF
-                # if checksum == data[127]:
-            rpm = int.from_bytes(data[0:2], byteorder='big')
-            throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
-            engine_temp = int.from_bytes(data[8:10], byteorder='big') * 0.1
-            drive_speed = int.from_bytes(data[56:58], byteorder='big') * 0.1
-            ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
-            gear = int.from_bytes(data[104:106], byteorder='big') // 10
+                checksum = sum(data[:143]) & 0xFF
+                if checksum == data[143]:
+                    rpm = int.from_bytes(data[0:2], byteorder='big')
+                    throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
+                    engine_temp = int.from_bytes(data[8:10], byteorder='big') * 0.1
+                    drive_speed = int.from_bytes(data[56:58], byteorder='big') * 0.1
+                    ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
+                    gear = int.from_bytes(data[104:106], byteorder='big') // 10
 
-            return {
-                'RPM': rpm,
-                'Throttle Position': throttle_pos,
-                'Engine Temperature': engine_temp,
-                'Drive Speed': drive_speed,
-                'Ground Speed': ground_speed,
-                'Gear': str(gear)  # Ensure gear is a string for display
-            }
+                    return {
+                        'RPM': rpm,
+                        'Throttle Position': throttle_pos,
+                        'Engine Temperature': engine_temp,
+                        'Drive Speed': drive_speed,
+                        'Ground Speed': ground_speed,
+                        'Gear': str(gear)  # Ensure gear is a string for display
+                    }
         # If not enough data or marker/checksum fails, return all -1
         print("RS232 data not ready or invalid packet received.")
         return {
