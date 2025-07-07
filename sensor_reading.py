@@ -156,14 +156,17 @@ def get_rs232_data():
     global rs232_buffer, rs232_synchronized
     
     try:
-        # Read all available data in chunks
+        # Always try to read new data first
+        new_data_received = False
         while rs232.in_waiting > 0:
             # Read available bytes (could be partial packets)
             available_bytes = min(rs232.in_waiting, 64)  # Read up to 64 bytes at a time
             data_chunk = rs232.read(available_bytes)
             rs232_buffer.extend(data_chunk)
+            new_data_received = True
+            print(f"Read {len(data_chunk)} bytes, buffer size now: {len(rs232_buffer)}")
         
-        # If we're not synchronized, try to find the end of a valid message
+        # If we're not synchronized, try to find the start of a valid message
         if not rs232_synchronized:
             # Look for marker bytes pattern (0xFC, 0xFB, 0xFA) in the buffer
             for i in range(len(rs232_buffer) - 2):
@@ -192,7 +195,7 @@ def get_rs232_data():
                 print("RS232 clearing old unsynchronized data")
         
         # If synchronized, try to process complete messages
-        if rs232_synchronized and len(rs232_buffer) >= 144:
+        while rs232_synchronized and len(rs232_buffer) >= 144:
             # Extract the first 144 bytes
             data = rs232_buffer[:144]
             
@@ -203,6 +206,7 @@ def get_rs232_data():
                 if checksum == data[143]:
                     # Clear the processed data from buffer
                     rs232_buffer = rs232_buffer[144:]
+                    print(f"Successfully processed message, buffer size now: {len(rs232_buffer)}")
                     
                     rpm = int.from_bytes(data[0:2], byteorder='big')
                     throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
@@ -223,10 +227,12 @@ def get_rs232_data():
                     print("RS232 checksum validation failed, losing synchronization.")
                     rs232_synchronized = False
                     rs232_buffer = rs232_buffer[1:]  # Remove one byte and try to resync
+                    break  # Exit the while loop to re-synchronize
             else:
                 print("RS232 marker bytes not found, losing synchronization.")
                 rs232_synchronized = False
                 rs232_buffer = rs232_buffer[1:]  # Remove one byte and try to resync
+                break  # Exit the while loop to re-synchronize
         
         # Clear buffer if it gets too large (prevent memory issues)
         if len(rs232_buffer) > 432:  # 3x expected packet size
@@ -235,6 +241,14 @@ def get_rs232_data():
             rs232_synchronized = False
         
         # If not enough data or not synchronized, return all -1
+        # But provide some debug info about the current state
+        if not new_data_received and len(rs232_buffer) == 0:
+            print("No new RS232 data available")
+        elif not rs232_synchronized:
+            print(f"RS232 not synchronized, buffer size: {len(rs232_buffer)}")
+        else:
+            print(f"RS232 synchronized but incomplete message, buffer size: {len(rs232_buffer)}")
+            
         return {
             'RPM': -1,
             'Throttle Position': -1,
