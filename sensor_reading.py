@@ -150,10 +150,11 @@ def get_serial_data():
 # Global buffer to accumulate RS232 data packets
 rs232_buffer = bytearray()
 rs232_synchronized = False
+last_good_rs232_data = None  # Cache for the last successfully parsed data
 
 # Function to read and process RS232 data packets synchronously
 def get_rs232_data():
-    global rs232_buffer, rs232_synchronized
+    global rs232_buffer, rs232_synchronized, last_good_rs232_data
     
     try:
         # Read all available data in chunks
@@ -163,7 +164,7 @@ def get_rs232_data():
             data_chunk = rs232.read(available_bytes)
             rs232_buffer.extend(data_chunk)
         
-        # If we're not synchronized, try to find the end of a valid message
+        # If we're not synchronized, try to find the start of a valid message
         if not rs232_synchronized:
             # Look for marker bytes pattern (0xFC, 0xFB, 0xFA) in the buffer
             for i in range(len(rs232_buffer) - 2):
@@ -201,8 +202,9 @@ def get_rs232_data():
                 # Compute checksum to validate
                 checksum = sum(data[:143]) & 0xFF
                 if checksum == data[143]:
-                    # Clear the processed data from buffer
-                    rs232_buffer = rs232_buffer[144:]
+                    # Successfully processed a packet - clear the entire buffer for fresh data next time
+                    rs232_buffer.clear()
+                    print("Successfully processed RS232 packet - buffer cleared for next call")
                     
                     rpm = int.from_bytes(data[0:2], byteorder='big')
                     throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
@@ -211,9 +213,8 @@ def get_rs232_data():
                     ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
                     gear = int.from_bytes(data[104:106], byteorder='big') // 10
 
-                    print(f"RS232 Data: RPM={rpm}, Throttle Position={throttle_pos}, Engine Temp={engine_temp}, Drive Speed={drive_speed}, Ground Speed={ground_speed}, Gear={gear}")
-
-                    return {
+                    # Cache this good data for future use
+                    last_good_rs232_data = {
                         'RPM': rpm,
                         'Throttle Position': throttle_pos,
                         'Engine Temperature': engine_temp,
@@ -221,6 +222,10 @@ def get_rs232_data():
                         'Ground Speed': ground_speed,
                         'Gear': str(gear)  # Ensure gear is a string for display
                     }
+
+                    print(f"RS232 Data: RPM={rpm}, Throttle Position={throttle_pos}, Engine Temp={engine_temp}, Drive Speed={drive_speed}, Ground Speed={ground_speed}, Gear={gear}")
+
+                    return last_good_rs232_data
                 else:
                     print("RS232 checksum validation failed, losing synchronization.")
                     rs232_synchronized = False
@@ -236,28 +241,39 @@ def get_rs232_data():
             rs232_buffer.clear()
             rs232_synchronized = False
         
-        # If not enough data or not synchronized, return all -1
-        return {
-            'RPM': -1,
-            'Throttle Position': -1,
-            'Engine Temperature': -1,
-            'Drive Speed': -1,
-            'Ground Speed': -1,
-            'Gear': -1
-        }
+        # If not enough data or not synchronized, return last good data if available
+        if last_good_rs232_data is not None:
+            print("RS232 returning cached data while waiting for new packet")
+            return last_good_rs232_data.copy()  # Return a copy to avoid modification
+        else:
+            print("RS232 no data available and no cached data")
+            return {
+                'RPM': -1,
+                'Throttle Position': -1,
+                'Engine Temperature': -1,
+                'Drive Speed': -1,
+                'Ground Speed': -1,
+                'Gear': -1
+            }
     except Exception as e:
         print(f"Failed to read RS232 data: {e}")
         # Clear buffer on error to prevent corruption
         rs232_buffer.clear()
         rs232_synchronized = False
-        return {
-            'RPM': -1,
-            'Throttle Position': -1,
-            'Engine Temperature': -1,
-            'Drive Speed': -1,
-            'Ground Speed': -1,
-            'Gear': -1
-        }
+        
+        # Even on error, return last good data if available
+        if last_good_rs232_data is not None:
+            print("RS232 error occurred, returning cached data")
+            return last_good_rs232_data.copy()
+        else:
+            return {
+                'RPM': -1,
+                'Throttle Position': -1,
+                'Engine Temperature': -1,
+                'Drive Speed': -1,
+                'Ground Speed': -1,
+                'Gear': -1
+            }
 
 # Power on and power down functions for SIM7600X module
 def power_on(power_key):
