@@ -236,7 +236,7 @@ def gps_acquisition_thread():
             print(f"GPS thread error: {e}")
         
         # GPS updates every 5 seconds (slower than main sensors)
-        time.sleep(5)
+        time.sleep(1)
 
 # Function for data acquisition
 def data_acquisition_thread():
