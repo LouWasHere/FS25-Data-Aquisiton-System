@@ -264,7 +264,7 @@ def data_acquisition_thread():
             }
             # Add the data to the queue for UI updates
             sensor_data.put(latest_sensor_data)
-        time.sleep(0.1)
+        time.sleep(0.15)
 
 # Function for UI
 def ui_thread():
