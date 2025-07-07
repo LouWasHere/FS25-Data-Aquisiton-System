@@ -32,6 +32,9 @@ data_lock = threading.Lock()
 # Shared variable for the latest sensor data
 latest_sensor_data = None
 
+# Shared GPS data - updated by GPS thread
+latest_gps_data = {"Latitude": 53.8067, "Longitude": 1.5550}  # Default dummy data
+
 # Flag to track client connection status
 client_connected = False
 
@@ -216,34 +219,52 @@ class SensorWindow(QMainWindow):
         stop_event.set()  # Signal all threads to stop
         event.accept()
 
+# Function for GPS data acquisition (separate thread)
+def gps_acquisition_thread():
+    global latest_gps_data
+    while not stop_event.is_set():
+        try:
+            if TEST_MODE:
+                gps_data = mock_get_gps_data()
+            else:
+                gps_data = sensor_reading.get_gps_data()
+            
+            with data_lock:
+                latest_gps_data = gps_data
+                print(f"GPS updated: {gps_data}")
+        except Exception as e:
+            print(f"GPS thread error: {e}")
+        
+        # GPS updates every 5 seconds (slower than main sensors)
+        time.sleep(5)
+
 # Function for data acquisition
 def data_acquisition_thread():
-    global latest_sensor_data
+    global latest_sensor_data, latest_gps_data
     while not stop_event.is_set():
         if TEST_MODE:
             imu_data = mock_get_imu_data()
-            gps_data = mock_get_gps_data()
             serial_data = mock_get_serial_data()
             rs232_data = mock_get_rs232_data()
         else:
             imu_data = sensor_reading.get_imu_data()
-            gps_data = sensor_reading.get_gps_data()
             serial_data = sensor_reading.get_serial_data()
             rs232_data = sensor_reading.get_rs232_data()
 
         with data_lock:
             # Add a timestamp to the sensor data
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            # Update the latest sensor data
+            # Update the latest sensor data (using the latest GPS data from GPS thread)
             latest_sensor_data = {
                 "Timestamp": timestamp,  # Add the timestamp here
                 "IMU Data": imu_data,
-                "GPS Data": gps_data,
+                "GPS Data": latest_gps_data.copy(),  # Use GPS data from separate thread
                 "Serial Data": serial_data,
                 "RS232 Data": rs232_data
             }
             # Add the data to the queue for UI updates
             sensor_data.put(latest_sensor_data)
+        time.sleep(1)
 
 # Function for UI
 def ui_thread():
@@ -385,14 +406,17 @@ def networking_thread():
 
 # Start threads
 if __name__ == "__main__":
+    gps_thread = threading.Thread(target=gps_acquisition_thread, daemon=True)
     acquisition_thread = threading.Thread(target=data_acquisition_thread, daemon=True)
     ui_thread_instance = threading.Thread(target=ui_thread, daemon=True)
     networking_thread_instance = threading.Thread(target=networking_thread, daemon=True)
 
+    gps_thread.start()
     acquisition_thread.start()
     ui_thread_instance.start()
     networking_thread_instance.start()
 
+    gps_thread.join()
     acquisition_thread.join()
     ui_thread_instance.join()
     networking_thread_instance.join()
