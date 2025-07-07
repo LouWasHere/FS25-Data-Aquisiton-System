@@ -227,7 +227,7 @@ def data_acquisition_thread():
             rs232_data = mock_get_rs232_data()
         else:
             imu_data = sensor_reading.get_imu_data()
-            gps_data = sensor_reading.get_gps_data()
+            gps_data = mock_get_gps_data()
             serial_data = sensor_reading.get_serial_data()
             rs232_data = sensor_reading.get_rs232_data()
 
@@ -244,7 +244,6 @@ def data_acquisition_thread():
             }
             # Add the data to the queue for UI updates
             sensor_data.put(latest_sensor_data)
-        time.sleep(1)
 
 # Function for UI
 def ui_thread():

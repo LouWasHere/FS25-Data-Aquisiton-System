@@ -211,6 +211,8 @@ def get_rs232_data():
                     ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
                     gear = int.from_bytes(data[104:106], byteorder='big') // 10
 
+                    print(f"RS232 Data: RPM={rpm}, Throttle Position={throttle_pos}, Engine Temp={engine_temp}, Drive Speed={drive_speed}, Ground Speed={ground_speed}, Gear={gear}")
+
                     return {
                         'RPM': rpm,
                         'Throttle Position': throttle_pos,
