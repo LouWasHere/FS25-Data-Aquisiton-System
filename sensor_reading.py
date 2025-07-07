@@ -162,9 +162,8 @@ def get_rs232_data():
             available_bytes = min(rs232.in_waiting, 64)  # Read up to 64 bytes at a time
             data_chunk = rs232.read(available_bytes)
             rs232_buffer.extend(data_chunk)
-            print(f"Read {len(data_chunk)} bytes, buffer size now: {len(rs232_buffer)}")
         
-        # If we're not synchronized, try to find the start of a valid message
+        # If we're not synchronized, try to find the end of a valid message
         if not rs232_synchronized:
             # Look for marker bytes pattern (0xFC, 0xFB, 0xFA) in the buffer
             for i in range(len(rs232_buffer) - 2):
@@ -202,9 +201,8 @@ def get_rs232_data():
                 # Compute checksum to validate
                 checksum = sum(data[:143]) & 0xFF
                 if checksum == data[143]:
-                    # Successfully processed a packet - clear the entire buffer for next time
-                    rs232_buffer.clear()
-                    print("Successfully processed RS232 packet - buffer cleared for next call")
+                    # Clear the processed data from buffer
+                    rs232_buffer = rs232_buffer[144:]
                     
                     rpm = int.from_bytes(data[0:2], byteorder='big')
                     throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
@@ -237,13 +235,6 @@ def get_rs232_data():
             rs232_synchronized = False
         
         # If not enough data or not synchronized, return all -1
-        if len(rs232_buffer) == 0:
-            print("No RS232 data available - buffer empty")
-        elif not rs232_synchronized:
-            print(f"RS232 not synchronized, buffer size: {len(rs232_buffer)}")
-        else:
-            print(f"RS232 synchronized but incomplete message, buffer size: {len(rs232_buffer)}")
-            
         return {
             'RPM': -1,
             'Throttle Position': -1,
