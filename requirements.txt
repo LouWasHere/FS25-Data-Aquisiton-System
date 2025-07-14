@@ -1,0 +1,36 @@
+# FS25 Data Acquisition System Requirements
+# Install with: pip install -r requirements.txt
+
+# Core Python Libraries (most are built-in, but listed for clarity)
+# sys, time, math, json, threading, queue, re, subprocess, csv, os - all built-in
+
+# Hardware Interface Libraries
+pyserial>=3.5
+RPi.GPIO>=0.7.1
+
+# Adafruit CircuitPython Libraries for Sensors
+adafruit-circuitpython-mpu6050>=1.1.15
+adafruit-circuitpython-bno055>=5.4.17
+adafruit-blinka>=8.25.0
+
+# GUI Framework
+PyQt5>=5.15.7
+PyQtWebEngine>=5.15.6
+
+# Data Analysis and Visualization
+pandas>=1.5.3
+numpy>=1.24.3
+matplotlib>=3.7.1
+pyqtgraph>=0.13.3
+
+# Mapping and Geospatial
+folium>=0.14.0
+
+# HTTP Requests (for testing/messaging)
+requests>=2.31.0
+
+# Note: Some packages may require system-level dependencies on Raspberry Pi:
+# sudo apt-get update
+# sudo apt-get install -y python3-pyqt5 python3-pyqt5.qtwebengine python3-dev
+# sudo apt-get install -y i2c-tools python3-smbus
+# sudo raspi-config (enable I2C, SPI, Serial)
