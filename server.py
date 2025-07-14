@@ -110,7 +110,7 @@ class SensorWindow(QMainWindow):
         self.rpm_bar.setRange(0, 15000)  # RPM range: 0 to 15000
         self.rpm_bar.setTextVisible(False)
         self.rpm_bar.setStyleSheet(
-            "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
+            "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
         )
         self.rpm_label = QLabel("0 RPM")
         self.rpm_label.setStyleSheet("font-size: 18pt; color: #00FF00; qproperty-alignment: AlignCenter;")
@@ -122,6 +122,19 @@ class SensorWindow(QMainWindow):
         # Gear Position
         self.gear_label = QLabel("N")
         self.gear_label.setStyleSheet("font-size: 48pt; color: #00FF00; qproperty-alignment: AlignCenter;")
+
+        # Throttle Position Bar and Label
+        self.throttle_bar = QProgressBar()
+        self.throttle_bar.setRange(0, 100)  # Throttle range: 0 to 100%
+        self.throttle_bar.setOrientation(Qt.Vertical)  # Make it vertical
+        self.throttle_bar.setTextVisible(False)
+        self.throttle_bar.setStyleSheet(
+            "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
+        )
+        self.throttle_bar.setFixedSize(35, 100)  # Slightly wider and shorter for better visibility
+        
+        self.throttle_label = QLabel("Throttle")
+        self.throttle_label.setStyleSheet("font-size: 12pt; color: #FFFFFF; qproperty-alignment: AlignLeft;")
 
         # Logo
         self.logo_label = QLabel()
@@ -137,14 +150,16 @@ class SensorWindow(QMainWindow):
         self.engine_temp_label = QLabel("Engine Temp: -- °C")
         self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
 
-        # Add widgets to the layout
-        self.layout.addWidget(self.rpm_bar, 0, 0, 1, 3)  # RPM bar spans 3 columns
-        self.layout.addWidget(self.rpm_label, 1, 0, 1, 3)  # RPM label spans 3 columns
-        self.layout.addWidget(self.gear_label, 2, 1)  # Gear position in center
-        self.layout.addWidget(self.speed_label, 3, 1)  # Speed label below gear in center
-        self.layout.addWidget(self.engine_temp_label, 4, 1)  # Engine temp label below speed in center
+        # Add widgets to the layout (using 5 columns for better alignment)
+        self.layout.addWidget(self.rpm_bar, 0, 0, 1, 5)  # RPM bar spans 5 columns
+        self.layout.addWidget(self.rpm_label, 1, 0, 1, 5)  # RPM label spans 5 columns
+        self.layout.addWidget(self.throttle_bar, 2, 0, 2, 1)  # Throttle bar on the left, spans 2 rows
+        self.layout.addWidget(self.gear_label, 2, 1, 1, 3)  # Gear position in center, spans 3 columns
+        self.layout.addWidget(self.throttle_label, 4, 0)  # Throttle label below throttle bar
+        self.layout.addWidget(self.speed_label, 3, 1, 1, 3)  # Speed label below gear, spans 3 columns
+        self.layout.addWidget(self.engine_temp_label, 4, 1, 1, 3)  # Engine temp label below speed, spans 3 columns
         self.layout.addWidget(self.logo_label, 5, 0)  # Logo in bottom-left
-        self.layout.addWidget(self.connection_label, 5, 1)  # Connection status in bottom-center
+        self.layout.addWidget(self.connection_label, 5, 1, 1, 3)  # Connection status spans 3 columns
 
         # Set the layout
         container = QWidget()
@@ -170,15 +185,15 @@ class SensorWindow(QMainWindow):
                 self.rpm_label.setText(f"{rpm} RPM")
                 if rpm > 11250:
                     self.rpm_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: red; }"
+                        "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: red; border-radius: 3px; }"
                     )
                 elif rpm > 7500:
                     self.rpm_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: orange; }"
+                        "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: orange; border-radius: 3px; }"
                     )
                 else:
                     self.rpm_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F4F4F; } QProgressBar::chunk { background-color: #006400; }"
+                        "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
                     )
 
                 # Speed from Serial (Wheel Speed)
@@ -200,6 +215,18 @@ class SensorWindow(QMainWindow):
                 # Gear from RS232
                 gear = rs232_data.get("Gear", "N")
                 self.gear_label.setText(str(gear))
+
+                # Throttle Position from RS232
+                throttle_pos = rs232_data.get("Throttle Position", 0)
+                try:
+                    throttle_val = int(throttle_pos)
+                except (ValueError, TypeError):
+                    throttle_val = 0
+                # Clamp the value to ensure it's within range
+                throttle_val = max(0, min(100, throttle_val))
+                self.throttle_bar.setValue(throttle_val)
+                # Debug print to see if throttle is updating (remove this later if needed)
+                print(f"Throttle: {throttle_val}%")
 
                 # Update Connection Status
                 if TEST_MODE:
