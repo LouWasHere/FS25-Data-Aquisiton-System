@@ -15,7 +15,7 @@ try:
 except ImportError:
     pass
 
-# Shared stop event for thread termination
+# Shared stop event for thread termination.
 stop_event = threading.Event()
 
 # Enable testing mode
