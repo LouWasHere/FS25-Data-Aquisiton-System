@@ -94,158 +94,158 @@ if not HEADLESS:
     from PyQt5.QtCore import Qt, QTimer
     from PyQt5.QtGui import QPixmap
 
-class SensorWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Car Dashboard")
-        self.setFixedSize(480, 320)  # Fixed size to prevent stretching
-        self.setGeometry(0, 0, 480, 320)  # Adjusted for 480x320 resolution
-        self.setStyleSheet("background-color: black;")
+    class SensorWindow(QMainWindow):
+        def __init__(self):
+            super().__init__()
+            self.setWindowTitle("Car Dashboard")
+            self.setFixedSize(480, 320)  # Fixed size to prevent stretching
+            self.setGeometry(0, 0, 480, 320)  # Adjusted for 480x320 resolution
+            self.setStyleSheet("background-color: black;")
 
-        self.layout = QGridLayout()
-        self.layout.setSpacing(5)  # Add consistent spacing
-        self.layout.setContentsMargins(10, 10, 10, 10)  # Add margins
+            self.layout = QGridLayout()
+            self.layout.setSpacing(5)  # Add consistent spacing
+            self.layout.setContentsMargins(10, 10, 10, 10)  # Add margins
 
-        # RPM Bar and Label
-        self.rpm_bar = QProgressBar()
-        self.rpm_bar.setRange(0, 15000)  # RPM range: 0 to 15000
-        self.rpm_bar.setTextVisible(False)
-        self.rpm_bar.setStyleSheet(
-            "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
-        )
-        self.rpm_label = QLabel("0 RPM")
-        self.rpm_label.setStyleSheet("font-size: 18pt; color: #00FF00; qproperty-alignment: AlignCenter;")
+            # RPM Bar and Label
+            self.rpm_bar = QProgressBar()
+            self.rpm_bar.setRange(0, 15000)  # RPM range: 0 to 15000
+            self.rpm_bar.setTextVisible(False)
+            self.rpm_bar.setStyleSheet(
+                "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
+            )
+            self.rpm_label = QLabel("0 RPM")
+            self.rpm_label.setStyleSheet("font-size: 18pt; color: #00FF00; qproperty-alignment: AlignCenter;")
 
-        # Speed Label (no bar)
-        self.speed_label = QLabel("0 km/h")
-        self.speed_label.setStyleSheet("font-size: 24pt; color: #00FF00; qproperty-alignment: AlignCenter;")
+            # Speed Label (no bar)
+            self.speed_label = QLabel("0 km/h")
+            self.speed_label.setStyleSheet("font-size: 24pt; color: #00FF00; qproperty-alignment: AlignCenter;")
 
-        # Gear Position
-        self.gear_label = QLabel("N")
-        self.gear_label.setStyleSheet("font-size: 48pt; color: #00FF00; qproperty-alignment: AlignCenter;")
+            # Gear Position
+            self.gear_label = QLabel("N")
+            self.gear_label.setStyleSheet("font-size: 48pt; color: #00FF00; qproperty-alignment: AlignCenter;")
 
-        # Throttle Position Bar and Label
-        self.throttle_bar = QProgressBar()
-        self.throttle_bar.setRange(0, 100)  # Throttle range: 0 to 100%
-        self.throttle_bar.setOrientation(Qt.Vertical)  # Make it vertical
-        self.throttle_bar.setTextVisible(False)
-        self.throttle_bar.setStyleSheet(
-            "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
-        )
-        self.throttle_bar.setFixedSize(35, 100)  # Slightly wider and shorter for better visibility
-        
-        self.throttle_label = QLabel("Throttle")
-        self.throttle_label.setStyleSheet("font-size: 12pt; color: #FFFFFF; qproperty-alignment: AlignLeft;")
+            # Throttle Position Bar and Label
+            self.throttle_bar = QProgressBar()
+            self.throttle_bar.setRange(0, 100)  # Throttle range: 0 to 100%
+            self.throttle_bar.setOrientation(Qt.Vertical)  # Make it vertical
+            self.throttle_bar.setTextVisible(False)
+            self.throttle_bar.setStyleSheet(
+                "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
+            )
+            self.throttle_bar.setFixedSize(35, 100)  # Slightly wider and shorter for better visibility
+            
+            self.throttle_label = QLabel("Throttle")
+            self.throttle_label.setStyleSheet("font-size: 12pt; color: #FFFFFF; qproperty-alignment: AlignLeft;")
 
-        # Logo
-        self.logo_label = QLabel()
-        self.logo_label.setPixmap(QPixmap("logo.png").scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        self.logo_label.setAlignment(Qt.AlignCenter)
+            # Logo
+            self.logo_label = QLabel()
+            self.logo_label.setPixmap(QPixmap("logo.png").scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            self.logo_label.setAlignment(Qt.AlignCenter)
 
-        # Connection Status
-        self.connection_label = QLabel("Disconnected")
-        self.connection_label.setStyleSheet("font-size: 14pt; color: #00FF00; qproperty-alignment: AlignCenter;")
-        self.ngrok_url_displayed = False  # Track if we've set the ngrok URL
+            # Connection Status
+            self.connection_label = QLabel("Disconnected")
+            self.connection_label.setStyleSheet("font-size: 14pt; color: #00FF00; qproperty-alignment: AlignCenter;")
+            self.ngrok_url_displayed = False  # Track if we've set the ngrok URL
 
-        # Engine Temperature Label
-        self.engine_temp_label = QLabel("Engine Temp: -- °C")
-        self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
+            # Engine Temperature Label
+            self.engine_temp_label = QLabel("Engine Temp: -- °C")
+            self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
 
-        # Add widgets to the layout (using 5 columns for better alignment)
-        self.layout.addWidget(self.rpm_bar, 0, 0, 1, 5)  # RPM bar spans 5 columns
-        self.layout.addWidget(self.rpm_label, 1, 0, 1, 5)  # RPM label spans 5 columns
-        self.layout.addWidget(self.throttle_bar, 2, 0, 2, 1)  # Throttle bar on the left, spans 2 rows
-        self.layout.addWidget(self.gear_label, 2, 1, 1, 3)  # Gear position in center, spans 3 columns
-        self.layout.addWidget(self.throttle_label, 4, 0)  # Throttle label below throttle bar
-        self.layout.addWidget(self.speed_label, 3, 1, 1, 3)  # Speed label below gear, spans 3 columns
-        self.layout.addWidget(self.engine_temp_label, 4, 1, 1, 3)  # Engine temp label below speed, spans 3 columns
-        self.layout.addWidget(self.logo_label, 5, 0)  # Logo in bottom-left
-        self.layout.addWidget(self.connection_label, 5, 1, 1, 3)  # Connection status spans 3 columns
+            # Add widgets to the layout (using 5 columns for better alignment)
+            self.layout.addWidget(self.rpm_bar, 0, 0, 1, 5)  # RPM bar spans 5 columns
+            self.layout.addWidget(self.rpm_label, 1, 0, 1, 5)  # RPM label spans 5 columns
+            self.layout.addWidget(self.throttle_bar, 2, 0, 2, 1)  # Throttle bar on the left, spans 2 rows
+            self.layout.addWidget(self.gear_label, 2, 1, 1, 3)  # Gear position in center, spans 3 columns
+            self.layout.addWidget(self.throttle_label, 4, 0)  # Throttle label below throttle bar
+            self.layout.addWidget(self.speed_label, 3, 1, 1, 3)  # Speed label below gear, spans 3 columns
+            self.layout.addWidget(self.engine_temp_label, 4, 1, 1, 3)  # Engine temp label below speed, spans 3 columns
+            self.layout.addWidget(self.logo_label, 5, 0)  # Logo in bottom-left
+            self.layout.addWidget(self.connection_label, 5, 1, 1, 3)  # Connection status spans 3 columns
 
-        # Set the layout
-        container = QWidget()
-        container.setLayout(self.layout)
-        self.setCentralWidget(container)
+            # Set the layout
+            container = QWidget()
+            container.setLayout(self.layout)
+            self.setCentralWidget(container)
 
-        # Timer to update sensor data
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_sensor_data)
-        self.timer.start(100)  # Update every 100ms for smooth bar updates
+            # Timer to update sensor data
+            self.timer = QTimer()
+            self.timer.timeout.connect(self.update_sensor_data)
+            self.timer.start(100)  # Update every 100ms for smooth bar updates
 
-    def update_sensor_data(self):
-        with data_lock:
-            if not sensor_data.empty():
-                latest_data = sensor_data.get()
-                # Get RS232 and Serial data safely
-                rs232_data = latest_data.get("RS232 Data", {"RPM": 0, "Gear": "N", "Engine Temperature": 0, "Drive Speed": 0, "Ground Speed": 0, "Throttle Position": 0})
-                serial_data = latest_data.get("Serial Data", {"Wheel Speed": 0})
+        def update_sensor_data(self):
+            with data_lock:
+                if not sensor_data.empty():
+                    latest_data = sensor_data.get()
+                    # Get RS232 and Serial data safely
+                    rs232_data = latest_data.get("RS232 Data", {"RPM": 0, "Gear": "N", "Engine Temperature": 0, "Drive Speed": 0, "Ground Speed": 0, "Throttle Position": 0})
+                    serial_data = latest_data.get("Serial Data", {"Wheel Speed": 0})
 
-                # RPM from RS232
-                rpm = int(rs232_data.get("RPM", 0))
-                self.rpm_bar.setValue(rpm)
-                self.rpm_label.setText(f"{rpm} RPM")
-                if rpm > 11250:
-                    self.rpm_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: red; border-radius: 3px; }"
-                    )
-                elif rpm > 7500:
-                    self.rpm_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: orange; border-radius: 3px; }"
-                    )
-                else:
-                    self.rpm_bar.setStyleSheet(
-                        "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
-                    )
-
-                # Speed from Serial (Wheel Speed)
-                speed = int(rs232_data.get("Ground Speed", 0))
-                self.speed_label.setText(f"{speed} km/h")
-
-                # Engine Temperature from RS232
-                engine_temp = rs232_data.get("Engine Temperature", 0)
-                try:
-                    temp_val = float(engine_temp)
-                except (ValueError, TypeError):
-                    temp_val = 0
-                self.engine_temp_label.setText(f"Engine Temp: {temp_val:.1f} °C")
-                if temp_val > 60:
-                    self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FF0000; qproperty-alignment: AlignCenter;")
-                else:
-                    self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
-
-                # Gear from RS232
-                gear = rs232_data.get("Gear", "N")
-                self.gear_label.setText(str(gear))
-
-                # Throttle Position from RS232
-                throttle_pos = rs232_data.get("Throttle Position", 0)
-                try:
-                    throttle_val = int(throttle_pos)
-                except (ValueError, TypeError):
-                    throttle_val = 0
-                # Clamp the value to ensure it's within range
-                throttle_val = max(0, min(100, throttle_val))
-                self.throttle_bar.setValue(throttle_val)
-                # Debug print to see if throttle is updating (remove this later if needed)
-                print(f"Throttle: {throttle_val}%")
-
-                # Update Connection Status
-                if TEST_MODE:
-                    if client_connected:
-                        self.connection_label.setText("Active")
+                    # RPM from RS232
+                    rpm = int(rs232_data.get("RPM", 0))
+                    self.rpm_bar.setValue(rpm)
+                    self.rpm_label.setText(f"{rpm} RPM")
+                    if rpm > 11250:
+                        self.rpm_bar.setStyleSheet(
+                            "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: red; border-radius: 3px; }"
+                        )
+                    elif rpm > 7500:
+                        self.rpm_bar.setStyleSheet(
+                            "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: orange; border-radius: 3px; }"
+                        )
                     else:
-                        self.connection_label.setText("Disconnected")
-                else:
-                    if not self.ngrok_url_displayed:
-                        ngrok_url = latest_data.get("Ngrok URL")
-                        if ngrok_url and ngrok_url != "Disconnected":
-                            self.connection_label.setText(ngrok_url)
-                            self.ngrok_url_displayed = True
+                        self.rpm_bar.setStyleSheet(
+                            "QProgressBar { background-color: #2F2F2F; border: 2px solid #555; border-radius: 5px; } QProgressBar::chunk { background-color: #006400; border-radius: 3px; }"
+                        )
 
-    def closeEvent(self, event):
-        """Handle the window close event."""
-        stop_event.set()  # Signal all threads to stop
-        event.accept()
+                    # Speed from Serial (Wheel Speed)
+                    speed = int(rs232_data.get("Ground Speed", 0))
+                    self.speed_label.setText(f"{speed} km/h")
+
+                    # Engine Temperature from RS232
+                    engine_temp = rs232_data.get("Engine Temperature", 0)
+                    try:
+                        temp_val = float(engine_temp)
+                    except (ValueError, TypeError):
+                        temp_val = 0
+                    self.engine_temp_label.setText(f"Engine Temp: {temp_val:.1f} °C")
+                    if temp_val > 60:
+                        self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FF0000; qproperty-alignment: AlignCenter;")
+                    else:
+                        self.engine_temp_label.setStyleSheet("font-size: 14pt; color: #FFFFFF; qproperty-alignment: AlignCenter;")
+
+                    # Gear from RS232
+                    gear = rs232_data.get("Gear", "N")
+                    self.gear_label.setText(str(gear))
+
+                    # Throttle Position from RS232
+                    throttle_pos = rs232_data.get("Throttle Position", 0)
+                    try:
+                        throttle_val = int(throttle_pos)
+                    except (ValueError, TypeError):
+                        throttle_val = 0
+                    # Clamp the value to ensure it's within range
+                    throttle_val = max(0, min(100, throttle_val))
+                    self.throttle_bar.setValue(throttle_val)
+                    # Debug print to see if throttle is updating (remove this later if needed)
+                    print(f"Throttle: {throttle_val}%")
+
+                    # Update Connection Status
+                    if TEST_MODE:
+                        if client_connected:
+                            self.connection_label.setText("Active")
+                        else:
+                            self.connection_label.setText("Disconnected")
+                    else:
+                        if not self.ngrok_url_displayed:
+                            ngrok_url = latest_data.get("Ngrok URL")
+                            if ngrok_url and ngrok_url != "Disconnected":
+                                self.connection_label.setText(ngrok_url)
+                                self.ngrok_url_displayed = True
+
+        def closeEvent(self, event):
+            """Handle the window close event."""
+            stop_event.set()  # Signal all threads to stop
+            event.accept()
 
 # Function for GPS data acquisition (separate thread)
 def gps_acquisition_thread():
@@ -298,8 +298,8 @@ def data_acquisition_thread():
 def ui_thread():
     app = QApplication([])
     window = SensorWindow()
-    app.aboutToQuit.connect(stop_event.set)  # Ensure stop_event is set when the app quits
-    window.showFullScreen()  # Use show() instead of showFullScreen() to respect window size
+    app.aboutToQuit.connect(stop_event.set)
+    window.showFullScreen()
     app.exec_()
 
 # Function for networking
