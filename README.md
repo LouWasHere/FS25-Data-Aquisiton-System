@@ -37,7 +37,8 @@ The dashboard is written in PyQt. It renders a simple but primarily legible desi
 
 *SCREENSHOTS TO FOLLOW*
 
-The steering wheel features two buttons that we use to page through different screens on the dashboard. One of these screens contains an address and port that can be used to access the server code running on the DAQ from any internet-connected device.
+When used with an internet connection, the UI displays an address and port that can be used to access the server code running on the DAQ from any internet-connected device.
 
 The DAQ features a SIM card tray that, when populated and the correct commands run, enable internat access and thus server hosting. Through ngrok, we are able to retain a static address and port to connect over despute the dynamic nature of a mobile network internet connection.
 
+Data Acquisition involved interfacing with many devices - our Arduino to interpret analog signals (connected over UART Serial), the IMU (connected over I2C), the GPS module (proprietary connection) and the ECU (over RS232 translated to Serial).
