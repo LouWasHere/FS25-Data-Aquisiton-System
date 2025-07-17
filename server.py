@@ -7,6 +7,15 @@ import math
 import threading
 from queue import Queue
 import os
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QGridLayout, QWidget, QProgressBar
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPixmap
+
+try:
+    import sensor_reading # Will only work on a Pi, so it is optional for testing mode.
+except ImportError:
+    pass
+
 
 # Shared stop event for thread termination.
 stop_event = threading.Event()
