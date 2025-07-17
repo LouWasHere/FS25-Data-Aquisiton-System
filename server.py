@@ -6,14 +6,7 @@ import json
 import math
 import threading
 from queue import Queue
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QGridLayout, QWidget, QProgressBar
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QPixmap
-
-try:
-    import sensor_reading # Will only work on a Pi, so it is optional for testing mode.
-except ImportError:
-    pass
+import os
 
 # Shared stop event for thread termination.
 stop_event = threading.Event()
@@ -92,6 +85,14 @@ def mock_get_rs232_data():
         "Ground Speed": ground_speed,
         "Gear": gear
     }
+
+# Detect headless mode (no display)
+HEADLESS = not os.environ.get("DISPLAY")
+
+if not HEADLESS:
+    from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QGridLayout, QWidget, QProgressBar
+    from PyQt5.QtCore import Qt, QTimer
+    from PyQt5.QtGui import QPixmap
 
 class SensorWindow(QMainWindow):
     def __init__(self):
@@ -435,15 +436,18 @@ def networking_thread():
 if __name__ == "__main__":
     gps_thread = threading.Thread(target=gps_acquisition_thread, daemon=True)
     acquisition_thread = threading.Thread(target=data_acquisition_thread, daemon=True)
-    ui_thread_instance = threading.Thread(target=ui_thread, daemon=True)
     networking_thread_instance = threading.Thread(target=networking_thread, daemon=True)
 
     gps_thread.start()
     acquisition_thread.start()
-    ui_thread_instance.start()
     networking_thread_instance.start()
+
+    if not HEADLESS:
+        ui_thread_instance = threading.Thread(target=ui_thread, daemon=True)
+        ui_thread_instance.start()
 
     gps_thread.join()
     acquisition_thread.join()
-    ui_thread_instance.join()
     networking_thread_instance.join()
+    if not HEADLESS:
+        ui_thread_instance.join()
