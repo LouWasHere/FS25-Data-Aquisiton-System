@@ -139,7 +139,7 @@ class TestClientApp(QWidget):
 
         # Create labels for IMU Data and Engine Temperature
         self.data_labels = {}
-        keys = ["RPM", "Speed", "Gear Position", "Linear Acceleration", "Engine Temperature"]
+        keys = ["RPM", "Speed", "Gear Position", "Linear Acceleration", "Engine Temperature", "Lambda 1"]
         for i, key in enumerate(keys):
             label_key = QLabel(f"{key}:")
             label_key.setStyleSheet("font-size: 14px; font-weight: bold;")
@@ -274,6 +274,14 @@ class TestClientApp(QWidget):
                     label.setStyleSheet("font-size: 14px; color: #FF0000;")
                 else:
                     label.setStyleSheet("font-size: 14px; color: #000000;")
+            elif key == "Lambda 1":
+                lambda1 = rs232_data.get("Lambda 1", "N/A")
+                try:
+                    lambda1_val = float(lambda1)
+                    value = f"{lambda1_val:.3f}"
+                except (ValueError, TypeError):
+                    value = str(lambda1)
+                label.setStyleSheet("font-size: 14px;")
             else:
                 value = imu_data.get(key, "N/A")
             label.setText(str(value))
