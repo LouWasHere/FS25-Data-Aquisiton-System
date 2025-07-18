@@ -273,7 +273,7 @@ class TestClientApp(QWidget):
                 if temp_val > 60:
                     label.setStyleSheet("font-size: 14px; color: #FF0000;")
                 else:
-                    label.setStyleSheet("font-size: 14px; color: #FFFFFF;")
+                    label.setStyleSheet("font-size: 14px; color: #000000;")
             else:
                 value = imu_data.get(key, "N/A")
             label.setText(str(value))
