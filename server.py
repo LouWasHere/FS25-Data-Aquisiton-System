@@ -83,6 +83,7 @@ def mock_get_rs232_data():
     rpm = int((math.sin(current_time) + 1) * 7500)  # Oscillates between 0 and 15000
     throttle_position = int((math.sin(current_time / 2) + 1) * 100)  # Oscillates between 0 and 100
     engine_temperature = int((math.sin(current_time / 3) + 1) * 100)  # Oscillates between 0 and 100
+    battery_voltage = int((math.sin(current_time / 4) + 1) * 12)  # Oscillates between 0 and 12
     lambda1 = int((math.sin(current_time / 4) + 1) * 100)  # Oscillates between 0 and 100
     drive_speed = int((math.sin(current_time / 4) + 1) * 90)  # Oscillates between 0 and 90
     ground_speed = int((math.sin(current_time / 5) + 1) * 90)  # Oscillates between 0 and 90
@@ -91,6 +92,7 @@ def mock_get_rs232_data():
         "RPM": rpm,
         "Throttle Position": throttle_position,
         "Engine Temperature": engine_temperature,
+        "Battery Voltage": battery_voltage,
         "Lambda 1": lambda1,
         "Drive Speed": drive_speed,
         "Ground Speed": ground_speed,

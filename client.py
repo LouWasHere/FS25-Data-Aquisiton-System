@@ -127,93 +127,94 @@ class TestClientApp(QWidget):
         self.logon_screen.setLayout(layout)
 
     def initConnectedScreen(self):
-        layout = QGridLayout()  # Use a grid layout for modular design
-        layout.setSpacing(20)  # Increased spacing between widgets
-
-        # Add a dedicated row for the timestamp
+        main_layout = QVBoxLayout()
+        # Timestamp at the top
         timestamp_layout = QHBoxLayout()
         self.timestamp_label = QLabel("Timestamp: N/A")
         self.timestamp_label.setStyleSheet("font-size: 16px; font-weight: bold; color: blue;")
         timestamp_layout.addWidget(self.timestamp_label)
-        layout.addLayout(timestamp_layout, 0, 0, 1, 4)  # Spans the entire top row
+        main_layout.addLayout(timestamp_layout)
 
-        # Create labels for IMU Data and Engine Temperature
+        # Data labels in a two-column grid
         self.data_labels = {}
-        keys = ["RPM", "Speed", "Gear Position", "Linear Acceleration", "Engine Temperature", "Lambda 1"]
+        keys = ["RPM", "Speed", "Gear Position", "Linear Acceleration", "Engine Temperature", "Lambda 1", "Battery Voltage", "Throttle Position"]
+        label_grid = QGridLayout()
+        label_grid.setSpacing(10)
         for i, key in enumerate(keys):
             label_key = QLabel(f"{key}:")
             label_key.setStyleSheet("font-size: 14px; font-weight: bold;")
             label_value = QLabel("N/A")
             label_value.setStyleSheet("font-size: 14px;")
             self.data_labels[key] = label_value
-
-            # Place each label in the grid
-            row = (i // 2) + 1  # Start from row 1 (row 0 is for the timestamp)
+            row = i // 2
             col = (i % 2) * 2
-            layout.addWidget(label_key, row, col)
-            layout.addWidget(label_value, row, col + 1)
+            label_grid.addWidget(label_key, row, col)
+            label_grid.addWidget(label_value, row, col + 1)
+        main_layout.addLayout(label_grid)
 
-        # Add RPM graph
+        # Graphs in a horizontal layout
+        graph_layout = QHBoxLayout()
         self.rpm_graph_widget = PlotWidget()
         self.rpm_graph_widget.setBackground("w")
         self.rpm_graph_widget.setTitle("RPM Over Time", color="b", size="14pt")
         self.rpm_graph_widget.setLabel("left", "RPM")
         self.rpm_graph_widget.setLabel("bottom", "Time (s)")
         self.rpm_graph_widget.showGrid(x=True, y=True)
-        self.rpm_graph_widget.setYRange(0, 15000)  # Set Y-axis range for RPM
+        self.rpm_graph_widget.setYRange(0, 15000)
         self.rpm_curve = self.rpm_graph_widget.plot(
             pen=pg.mkPen(color="r", width=2), name="RPM"
         )
-        layout.addWidget(self.rpm_graph_widget, 4, 0, 2, 2)  # Spans 2 rows and 2 columns
+        graph_layout.addWidget(self.rpm_graph_widget)
 
-        # Add Speed graph
         self.speed_graph_widget = PlotWidget()
         self.speed_graph_widget.setBackground("w")
         self.speed_graph_widget.setTitle("Speed Over Time", color="b", size="14pt")
         self.speed_graph_widget.setLabel("left", "Speed (km/h)")
         self.speed_graph_widget.setLabel("bottom", "Time (s)")
         self.speed_graph_widget.showGrid(x=True, y=True)
-        self.speed_graph_widget.setYRange(0, 120)  # Set Y-axis range for Speed
+        self.speed_graph_widget.setYRange(0, 120)
         self.speed_curve = self.speed_graph_widget.plot(
             pen=pg.mkPen(color="g", width=2), name="Speed"
         )
-        layout.addWidget(self.speed_graph_widget, 4, 2, 2, 2)  # Spans 2 rows and 2 columns
+        graph_layout.addWidget(self.speed_graph_widget)
+        main_layout.addLayout(graph_layout)
 
-        # Add the Map button
-        self.map_button = QPushButton('Show Map', self)
-        self.map_button.setStyleSheet("font-size: 16px;")
-        self.map_button.clicked.connect(self.show_map_window)
-        layout.addWidget(self.map_button, 6, 2)
-
-        # Add recording buttons
+        # Controls (map and recording buttons) in a horizontal layout
+        controls_layout = QHBoxLayout()
         self.start_recording_button = QPushButton('Start Recording', self)
         self.start_recording_button.setStyleSheet("font-size: 16px;")
         self.start_recording_button.clicked.connect(self.start_recording)
-        layout.addWidget(self.start_recording_button, 6, 0)
+        controls_layout.addWidget(self.start_recording_button)
 
         self.stop_recording_button = QPushButton('Stop Recording', self)
         self.stop_recording_button.setStyleSheet("font-size: 16px;")
         self.stop_recording_button.clicked.connect(self.stop_recording)
-        self.stop_recording_button.setEnabled(False)  # Initially disabled
-        layout.addWidget(self.stop_recording_button, 6, 1)
+        self.stop_recording_button.setEnabled(False)
+        controls_layout.addWidget(self.stop_recording_button)
 
-        # Add the shutdown button
+        self.map_button = QPushButton('Show Map', self)
+        self.map_button.setStyleSheet("font-size: 16px;")
+        self.map_button.clicked.connect(self.show_map_window)
+        controls_layout.addWidget(self.map_button)
+
         self.shutdown_button = QPushButton('Close Connection', self)
         self.shutdown_button.setStyleSheet("font-size: 16px;")
         self.shutdown_button.clicked.connect(self.shutdown_server)
-        layout.addWidget(self.shutdown_button, 6, 3)  # Bottom-right corner
+        controls_layout.addWidget(self.shutdown_button)
 
-        self.connected_screen.setLayout(layout)
+        main_layout.addLayout(controls_layout)
+
+        self.connected_screen.setLayout(main_layout)
 
         # Timer for updating the graph
         self.graph_timer = QTimer()
         self.graph_timer.timeout.connect(self.update_graph)
-        self.graph_timer.start(1000)  # Update every second
+        self.graph_timer.start(1000)
 
         # Initialize data storage for graphs
         self.rpm_data = []
         self.speed_data = []
-        self.max_time_window = 20  # Display the last 20 seconds of data
+        self.max_time_window = 20
 
     def connect_to_server(self):
         server_host = self.address_input.text()
@@ -281,6 +282,22 @@ class TestClientApp(QWidget):
                     value = f"{lambda1_val:.3f}"
                 except (ValueError, TypeError):
                     value = str(lambda1)
+                label.setStyleSheet("font-size: 14px;")
+            elif key == "Battery Voltage":
+                voltage = rs232_data.get("Battery Voltage", "N/A")
+                try:
+                    voltage_val = float(voltage)
+                    value = f"{voltage_val:.2f} V"
+                except (ValueError, TypeError):
+                    value = str(voltage)
+                label.setStyleSheet("font-size: 14px;")
+            elif key == "Throttle Position":
+                throttle = rs232_data.get("Throttle Position", "N/A")
+                try:
+                    throttle_val = float(throttle)
+                    value = f"{throttle_val:.1f} %"
+                except (ValueError, TypeError):
+                    value = str(throttle)
                 label.setStyleSheet("font-size: 14px;")
             else:
                 value = imu_data.get(key, "N/A")

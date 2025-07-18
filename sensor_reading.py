@@ -209,7 +209,8 @@ def get_rs232_data():
                     rpm = int.from_bytes(data[0:2], byteorder='big')
                     throttle_pos = int.from_bytes(data[2:4], byteorder='big') * 0.1
                     engine_temp = int.from_bytes(data[8:10], byteorder='big') * 0.1
-                    lambda1 = int.from_bytes(data[10:12], byteorder='big') * 0.001
+                    battery_voltage = int.from_bytes(data[44:46], byteorder='big') * 0.01
+                    lambda1 = int.from_bytes(data[66:68], byteorder='big') * 0.001
                     drive_speed = int.from_bytes(data[56:58], byteorder='big') * 0.1
                     ground_speed = int.from_bytes(data[58:60], byteorder='big') * 0.1
                     gear = int.from_bytes(data[104:106], byteorder='big') // 10
@@ -219,6 +220,7 @@ def get_rs232_data():
                         'RPM': rpm,
                         'Throttle Position': throttle_pos,
                         'Engine Temperature': engine_temp,
+                        'Battery Voltage': battery_voltage,
                         'Lambda 1': lambda1,
                         'Drive Speed': drive_speed,
                         'Ground Speed': ground_speed,
@@ -253,6 +255,7 @@ def get_rs232_data():
                 'RPM': -1,
                 'Throttle Position': -1,
                 'Engine Temperature': -1,
+                'Battery Voltage': -1,
                 'Lambda 1': -1,
                 'Drive Speed': -1,
                 'Ground Speed': -1,
@@ -273,6 +276,7 @@ def get_rs232_data():
                 'RPM': -1,
                 'Throttle Position': -1,
                 'Engine Temperature': -1,
+                'Battery Voltage': -1,
                 'Lambda 1': -1,
                 'Drive Speed': -1,
                 'Ground Speed': -1,
